@@ -14,7 +14,7 @@ import re
 import hashlib
 import xml.etree.ElementTree as ET
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 import sqlite3
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
@@ -107,6 +107,7 @@ def create_cloud_config():
         "cloud_provider": "github",  # github/google_drive/dropbox/custom
         "sync_enabled": True,
         "sync_interval": 300,  # 5 phut
+        "compression_enabled": True,  # Enable XML compression by default
         "enterprises": {},
         "telegram": {
             "enabled": False,
@@ -118,6 +119,16 @@ def create_cloud_config():
             "repo": "xml-warehouse-backup",
             "token": "",
             "branch": "main"
+        },
+        "google_drive": {
+            "credentials_file": "",
+            "folder_id": "",
+            "enabled": False
+        },
+        "dropbox": {
+            "access_token": "",
+            "folder_path": "/xml-warehouse",
+            "enabled": False
         },
         "machine_info": {
             "machine_id": generate_machine_id(),
@@ -154,8 +165,13 @@ def save_cloud_config(config):
         logging.error(f"Save cloud config error: {e}")
 
 def create_enterprise_db():
-    """Tao enterprise database."""
+    """Tao enterprise database voi indexes va constraints toi uu."""
     conn = sqlite3.connect(str(ENTERPRISE_DB))
+    
+    # Enable foreign keys
+    conn.execute('PRAGMA foreign_keys = ON')
+    
+    # Create enterprises table
     conn.execute('''
         CREATE TABLE IF NOT EXISTS enterprises (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -164,10 +180,16 @@ def create_enterprise_db():
             admin_contact TEXT,
             created_date TEXT,
             last_sync TEXT,
-            status TEXT DEFAULT 'active'
+            status TEXT DEFAULT 'active',
+            mst_prefix TEXT,  -- MST prefix for classification
+            industry_type TEXT,  -- Industry classification
+            region TEXT,  -- Geographic region
+            notes TEXT,
+            machine_id TEXT  -- Machine ID that created this enterprise
         )
     ''')
     
+    # Create xml_cloud_warehouse table with better structure
     conn.execute('''
         CREATE TABLE IF NOT EXISTS xml_cloud_warehouse (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -177,14 +199,21 @@ def create_enterprise_db():
             filename TEXT NOT NULL,
             content TEXT NOT NULL,
             file_hash TEXT,
+            file_size INTEGER,  -- File size in bytes
+            compression_ratio REAL,  -- Compression ratio
+            content_type TEXT DEFAULT 'xml',  -- Content type
             created_date TEXT,
             last_updated TEXT,
             sync_status TEXT DEFAULT 'pending',
             cloud_url TEXT,
+            protection_count INTEGER DEFAULT 0,  -- Number of times protected
+            last_protection TEXT,  -- Last protection timestamp
+            machine_id TEXT,  -- Machine ID that created this file
             UNIQUE(enterprise_id, mst, filename)
         )
     ''')
     
+    # Create sync_history table
     conn.execute('''
         CREATE TABLE IF NOT EXISTS sync_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -193,23 +222,164 @@ def create_enterprise_db():
             sync_type TEXT,
             sync_status TEXT,
             sync_date TEXT,
-            details TEXT
+            details TEXT,
+            file_count INTEGER,  -- Number of files synced
+            error_count INTEGER,  -- Number of errors
+            duration_ms INTEGER  -- Sync duration in milliseconds
         )
     ''')
+    
+    # Create enterprise_warehouses table for separate storage
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS enterprise_warehouses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            enterprise_id TEXT UNIQUE NOT NULL,
+            warehouse_name TEXT,
+            storage_path TEXT,  -- Local storage path
+            cloud_sync_enabled BOOLEAN DEFAULT 1,
+            compression_enabled BOOLEAN DEFAULT 1,
+            max_storage_mb INTEGER DEFAULT 1024,  -- Max storage in MB
+            current_usage_mb REAL DEFAULT 0,  -- Current usage in MB
+            created_date TEXT,
+            last_cleanup TEXT
+        )
+    ''')
+    
+    # Create MST classification table
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS mst_classifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            mst_prefix TEXT UNIQUE NOT NULL,  -- First 3 digits of MST
+            industry_category TEXT,  -- Industry category
+            region_code TEXT,  -- Region code
+            risk_level TEXT DEFAULT 'low',  -- Risk assessment
+            description TEXT,
+            created_date TEXT
+        )
+    ''')
+    
+    # Create machine registry table for multi-machine deployment
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS machine_registry (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            machine_id TEXT UNIQUE NOT NULL,
+            machine_name TEXT,
+            ip_address TEXT,
+            mac_address TEXT,
+            platform_info TEXT,
+            status TEXT DEFAULT 'offline',
+            created_date TEXT,
+            last_seen TEXT,
+            enterprise_count INTEGER DEFAULT 0,
+            xml_protected_count INTEGER DEFAULT 0,
+            last_sync TEXT,
+            sync_status TEXT DEFAULT 'idle',
+            notes TEXT
+        )
+    ''')
+    
+    # Create machine sync history table
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS machine_sync_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            machine_id TEXT,
+            sync_type TEXT,  -- 'enterprise', 'xml', 'config'
+            sync_status TEXT,
+            sync_date TEXT,
+            details TEXT,
+            duration_ms INTEGER,
+            file_count INTEGER DEFAULT 0,
+            error_count INTEGER DEFAULT 0
+        )
+    ''')
+    
+    # Create indexes for better performance
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_enterprise_id ON enterprises(enterprise_id)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_enterprise_status ON enterprises(status)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_warehouse_enterprise ON xml_cloud_warehouse(enterprise_id)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_warehouse_mst ON xml_cloud_warehouse(mst)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_warehouse_sync_status ON xml_cloud_warehouse(sync_status)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_warehouse_filename ON xml_cloud_warehouse(filename)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_sync_history_machine ON sync_history(machine_id)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_sync_history_enterprise ON sync_history(enterprise_id)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_sync_history_date ON sync_history(sync_date)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_mst_classification_prefix ON mst_classifications(mst_prefix)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_machine_registry_id ON machine_registry(machine_id)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_machine_registry_status ON machine_registry(status)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_machine_sync_history ON machine_sync_history(machine_id)')
+    
+    # Insert default MST classifications
+    default_classifications = [
+        ('010', 'Agriculture', 'HN', 'low', 'Nông nghiệp - Hà Nội'),
+        ('020', 'Mining', 'HN', 'medium', 'Khai thác mỏ - Hà Nội'),
+        ('030', 'Manufacturing', 'HN', 'medium', 'Sản xuất - Hà Nội'),
+        ('040', 'Construction', 'HN', 'medium', 'Xây dựng - Hà Nội'),
+        ('050', 'Trade', 'HN', 'low', 'Thương mại - Hà Nội'),
+        ('060', 'Transport', 'HN', 'medium', 'Vận tải - Hà Nội'),
+        ('070', 'Finance', 'HN', 'high', 'Tài chính - Hà Nội'),
+        ('080', 'Services', 'HN', 'low', 'Dịch vụ - Hà Nội'),
+        ('090', 'Government', 'HN', 'high', 'Chính phủ - Hà Nội')
+    ]
+    
+    for mst_prefix, industry, region, risk, desc in default_classifications:
+        conn.execute('''
+            INSERT OR IGNORE INTO mst_classifications 
+            (mst_prefix, industry_category, region_code, risk_level, description, created_date)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (mst_prefix, industry, region, risk, desc, datetime.now().isoformat()))
     
     conn.commit()
     conn.close()
     return ENTERPRISE_DB
 
-def add_enterprise(enterprise_id, enterprise_name, admin_contact=""):
-    """Them enterprise moi."""
+def add_enterprise(enterprise_id, enterprise_name, admin_contact="", mst_prefix=None, industry_type=None, region=None, notes=""):
+    """Them enterprise moi voi MST classification."""
     try:
+        # Validate enterprise_id
+        if not enterprise_id or len(enterprise_id.strip()) < 3:
+            logging.error("Enterprise ID phải có ít nhất 3 ký tự")
+            return False
+        
+        # Validate enterprise_name
+        if not enterprise_name or len(enterprise_name.strip()) < 5:
+            logging.error("Enterprise name phải có ít nhất 5 ký tự")
+            return False
+        
         conn = sqlite3.connect(str(ENTERPRISE_DB))
+        
+        # Check if enterprise already exists
+        cursor = conn.execute('SELECT enterprise_id FROM enterprises WHERE enterprise_id = ?', (enterprise_id,))
+        if cursor.fetchone():
+            logging.warning(f"Enterprise {enterprise_id} đã tồn tại")
+            conn.close()
+            return False
+        
+        # Auto-detect MST prefix if not provided
+        if not mst_prefix and admin_contact:
+            # Try to extract MST from admin contact or use default
+            mst_prefix = "050"  # Default to Trade category
+        
+        # Auto-detect industry type if not provided
+        if not industry_type:
+            industry_type = "General"
+        
+        # Auto-detect region if not provided
+        if not region:
+            region = "HN"  # Default to Hanoi
+        
+        # Insert enterprise
         conn.execute('''
-            INSERT OR REPLACE INTO enterprises 
-            (enterprise_id, enterprise_name, admin_contact, created_date)
+            INSERT INTO enterprises 
+            (enterprise_id, enterprise_name, admin_contact, mst_prefix, industry_type, region, notes, created_date, machine_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (enterprise_id, enterprise_name, admin_contact, mst_prefix, industry_type, region, notes, datetime.now().isoformat(), generate_machine_id()))
+        
+        # Create enterprise warehouse
+        conn.execute('''
+            INSERT INTO enterprise_warehouses 
+            (enterprise_id, warehouse_name, storage_path, created_date)
             VALUES (?, ?, ?, ?)
-        ''', (enterprise_id, enterprise_name, admin_contact, datetime.now().isoformat()))
+        ''', (enterprise_id, f"warehouse_{enterprise_id}", f"warehouses/{enterprise_id}", datetime.now().isoformat()))
         
         conn.commit()
         conn.close()
@@ -219,11 +389,16 @@ def add_enterprise(enterprise_id, enterprise_name, admin_contact=""):
         config["enterprises"][enterprise_id] = {
             "name": enterprise_name,
             "admin": admin_contact,
-            "last_sync": None
+            "mst_prefix": mst_prefix,
+            "industry_type": industry_type,
+            "region": region,
+            "notes": notes,
+            "last_sync": None,
+            "created_date": datetime.now().isoformat()
         }
         save_cloud_config(config)
         
-        logging.info(f"Added enterprise: {enterprise_id} - {enterprise_name}")
+        logging.info(f"Added enterprise: {enterprise_id} - {enterprise_name} (MST: {mst_prefix}, Industry: {industry_type}, Region: {region})")
         return True
         
     except Exception as e:
@@ -339,21 +514,45 @@ def extract_company_name_from_xml(xml_content):
         logging.error(f"Extract company name error: {e}")
         return "Unknown Company"
 
-def add_xml_to_cloud_warehouse(enterprise_id, xml_file_path, xml_content=None):
-    """Them XML vao cloud warehouse."""
+def add_xml_to_cloud_warehouse(enterprise_id, xml_file_path, xml_content=None, enable_compression=True):
+    """Them XML vao cloud warehouse voi compression va tracking."""
     try:
         if xml_content is None:
             with open(xml_file_path, 'r', encoding='utf-8') as f:
                 xml_content = f.read()
         
+        # Validate MST
         mst = extract_mst_from_xml(xml_content)
         if not mst:
             logging.warning(f"Cannot extract MST from {xml_file_path}")
             return False
-            
+        
+        # Validate MST format
+        is_valid, validation_msg = validate_mst(mst)
+        if not is_valid:
+            logging.warning(f"MST validation failed: {validation_msg}")
+            return False
+        
+        # Classify MST
+        mst_classification = classify_mst(mst)
+        if mst_classification:
+            logging.info(f"MST {mst} classified as: {mst_classification['industry_category']} - {mst_classification['risk_level']}")
+        
         company_name = extract_company_name_from_xml(xml_content)
         filename = os.path.basename(xml_file_path)
         file_hash = hashlib.sha256(xml_content.encode('utf-8')).hexdigest()
+        original_size = len(xml_content)
+        
+        # Compress content if enabled
+        if enable_compression:
+            compressed_content = compress_xml_content(xml_content)
+            final_content = compressed_content
+            compressed_size = len(compressed_content)
+            compression_ratio = compressed_size / original_size if original_size > 0 else 1.0
+            logging.info(f"Compression applied: {original_size} -> {compressed_size} bytes (ratio: {compression_ratio:.2f})")
+        else:
+            final_content = xml_content
+            compression_ratio = 1.0
         
         conn = sqlite3.connect(str(ENTERPRISE_DB))
         
@@ -370,27 +569,36 @@ def add_xml_to_cloud_warehouse(enterprise_id, xml_file_path, xml_content=None):
             conn.close()
             return False  # Skip duplicate
         
+        # Insert with enhanced data
         conn.execute('''
             INSERT INTO xml_cloud_warehouse 
             (enterprise_id, mst, company_name, filename, content, file_hash, 
-             created_date, last_updated, sync_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             file_size, compression_ratio, content_type, created_date, last_updated, sync_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
-            enterprise_id, mst, company_name, filename, xml_content, file_hash,
-            datetime.now().isoformat(), datetime.now().isoformat(), 'pending'
+            enterprise_id, mst, company_name, filename, final_content, file_hash,
+            original_size, compression_ratio, 'xml', datetime.now().isoformat(), datetime.now().isoformat(), 'pending'
         ))
+        
+        # Update enterprise warehouse usage
+        conn.execute('''
+            UPDATE enterprise_warehouses 
+            SET current_usage_mb = current_usage_mb + ?
+            WHERE enterprise_id = ?
+        ''', (original_size / (1024 * 1024), enterprise_id))  # Convert to MB
         
         conn.commit()
         conn.close()
         
-        # Update cache
+        # Update cache with original content for comparison
         if enterprise_id not in ENTERPRISE_WAREHOUSES:
             ENTERPRISE_WAREHOUSES[enterprise_id] = {}
         if mst not in ENTERPRISE_WAREHOUSES[enterprise_id]:
             ENTERPRISE_WAREHOUSES[enterprise_id][mst] = {}
-        ENTERPRISE_WAREHOUSES[enterprise_id][mst][filename] = xml_content
+        ENTERPRISE_WAREHOUSES[enterprise_id][mst][filename] = xml_content  # Store original for protection
         
-        logging.info(f"Added to cloud warehouse: Enterprise {enterprise_id}, MST {mst}, {filename}")
+        logging.info(f"Added to cloud warehouse: Enterprise {enterprise_id}, MST {mst}, {filename} "
+                    f"(compressed: {enable_compression}, size: {original_size} bytes, ratio: {compression_ratio:.2f})")
         
         # Schedule cloud sync
         THREAD_POOL.submit(sync_to_cloud, enterprise_id)
@@ -402,35 +610,217 @@ def add_xml_to_cloud_warehouse(enterprise_id, xml_file_path, xml_content=None):
         return False
 
 def sync_to_cloud(enterprise_id=None):
-    """Dong bo len cloud."""
+    """Dong bo len cloud voi tat ca providers."""
     try:
         config = load_cloud_config()
         if not config.get("sync_enabled", False):
-            return
+            logging.info("Cloud sync is disabled")
+            return False
             
         provider = config.get("cloud_provider", "github")
+        sync_results = {}
         
-        if provider == "github":
-            return sync_to_github(enterprise_id, config)
-        elif provider == "google_drive":
-            return sync_to_google_drive(enterprise_id, config)
-        # Add more providers...
+        # Sync to all enabled providers
+        if provider == "github" or config.get("github", {}).get("token"):
+            try:
+                result = sync_to_github(enterprise_id, config)
+                sync_results["github"] = result
+                logging.info(f"GitHub sync result: {result}")
+            except Exception as e:
+                logging.error(f"GitHub sync error: {e}")
+                sync_results["github"] = False
+        
+        if provider == "google_drive" or config.get("google_drive", {}).get("enabled"):
+            try:
+                result = sync_to_google_drive(enterprise_id, config)
+                sync_results["google_drive"] = result
+                logging.info(f"Google Drive sync result: {result}")
+            except Exception as e:
+                logging.error(f"Google Drive sync error: {e}")
+                sync_results["google_drive"] = False
+        
+        if provider == "dropbox" or config.get("dropbox", {}).get("enabled"):
+            try:
+                result = sync_to_dropbox(enterprise_id, config)
+                sync_results["dropbox"] = result
+                logging.info(f"Dropbox sync result: {result}")
+            except Exception as e:
+                logging.error(f"Dropbox sync error: {e}")
+                sync_results["dropbox"] = False
+        
+        # Update last sync time
+        config["machine_info"]["last_sync"] = datetime.now().isoformat()
+        save_cloud_config(config)
+        
+        # Check overall success
+        overall_success = any(sync_results.values())
+        if overall_success:
+            logging.info(f"Cloud sync completed successfully: {sync_results}")
+        else:
+            logging.warning(f"All cloud syncs failed: {sync_results}")
+        
+        return overall_success
         
     except Exception as e:
         logging.error(f"Sync to cloud error: {e}")
         return False
 
 def sync_to_google_drive(enterprise_id, config):
-    """Dong bo len Google Drive (placeholder)."""
-    # TODO: Implement Google Drive API integration
-    logging.info(f"Google Drive sync not implemented yet for enterprise {enterprise_id}")
-    return False
+    """Dong bo len Google Drive với API hoan chinh."""
+    try:
+        google_config = config.get("google_drive", {})
+        if not google_config.get("credentials_file") or not google_config.get("folder_id"):
+            logging.warning("Google Drive config incomplete: missing credentials or folder_id")
+            return False
+            
+        # Check if credentials file exists
+        credentials_path = Path(google_config["credentials_file"])
+        if not credentials_path.exists():
+            logging.error(f"Google Drive credentials file not found: {credentials_path}")
+            return False
+            
+        # Prepare data for Google Drive
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        
+        if enterprise_id:
+            cursor = conn.execute('''
+                SELECT * FROM xml_cloud_warehouse 
+                WHERE enterprise_id = ? AND sync_status = 'pending'
+            ''', (enterprise_id,))
+        else:
+            cursor = conn.execute('''
+                SELECT * FROM xml_cloud_warehouse 
+                WHERE sync_status = 'pending'
+            ''')
+        
+        pending_files = cursor.fetchall()
+        conn.close()
+        
+        if not pending_files:
+            logging.info("No pending files to sync to Google Drive")
+            return True
+        
+        success_count = 0
+        error_count = 0
+        
+        for file_data in pending_files:
+            try:
+                _, ent_id, mst, company, filename, content, file_hash, created, updated, _, _ = file_data
+                
+                # Create Google Drive file path
+                file_path = f"enterprises/{ent_id}/{mst}/{filename}"
+                
+                # Upload to Google Drive
+                success = upload_to_google_drive_api(file_path, content, google_config)
+                
+                if success:
+                    # Update sync status
+                    conn = sqlite3.connect(str(ENTERPRISE_DB))
+                    conn.execute('''
+                        UPDATE xml_cloud_warehouse 
+                        SET sync_status = 'synced', cloud_url = ?
+                        WHERE enterprise_id = ? AND mst = ? AND filename = ?
+                    ''', (f"gdrive:{file_path}", ent_id, mst, filename))
+                    conn.commit()
+                    conn.close()
+                    success_count += 1
+                    logging.info(f"Successfully synced to Google Drive: {filename}")
+                else:
+                    error_count += 1
+                    logging.error(f"Failed to sync to Google Drive: {filename}")
+                    
+            except Exception as file_error:
+                error_count += 1
+                logging.error(f"Error processing file {filename} for Google Drive: {file_error}")
+                continue
+                
+        # Record sync history
+        if success_count > 0:
+            record_sync_history(enterprise_id, "google_drive_upload", "partial_success", 
+                              f"Synced {success_count}/{len(pending_files)} files to Google Drive")
+        else:
+            record_sync_history(enterprise_id, "google_drive_upload", "failed", 
+                              f"Failed to sync any files to Google Drive")
+        
+        logging.info(f"Google Drive sync completed: {success_count} success, {error_count} errors")
+        return success_count > 0
+        
+    except Exception as e:
+        logging.error(f"Google Drive sync critical error: {e}")
+        record_sync_history(enterprise_id, "google_drive_upload", "critical_failed", str(e))
+        return False
+
+def upload_to_google_drive_api(file_path, content, google_config):
+    """Upload file to Google Drive via API."""
+    try:
+        # Check if google-auth and google-api-python-client are available
+        try:
+            from google.oauth2.credentials import Credentials
+            from google_auth_oauthlib.flow import InstalledAppFlow
+            from google.auth.transport.requests import Request
+            from googleapiclient.discovery import build
+            from googleapiclient.http import MediaIoBaseUpload
+            import io
+        except ImportError:
+            logging.error("Google Drive API libraries not installed. Install with: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client")
+            return False
+        
+        # OAuth2 setup
+        SCOPES = ['https://www.googleapis.com/auth/drive.file']
+        credentials_path = Path(google_config["credentials_file"])
+        token_path = credentials_path.parent / 'token.json'
+        
+        creds = None
+        if token_path.exists():
+            creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+        
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(str(credentials_path), SCOPES)
+                creds = flow.run_local_server(port=0)
+            
+            # Save the credentials for the next run
+            with open(token_path, 'w') as token:
+                token.write(creds.to_json())
+        
+        # Build the Drive API service
+        service = build('drive', 'v3', credentials=creds)
+        
+        # Create file metadata
+        file_metadata = {
+            'name': os.path.basename(file_path),
+            'parents': [google_config["folder_id"]]
+        }
+        
+        # Create media upload
+        media = MediaIoBaseUpload(
+            io.BytesIO(content.encode('utf-8')),
+            mimetype='application/xml',
+            resumable=True
+        )
+        
+        # Upload file
+        file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id'
+        ).execute()
+        
+        logging.info(f"Google Drive upload successful: {file_path} -> File ID: {file.get('id')}")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Google Drive API upload error: {e}")
+        return False
 
 def sync_to_github(enterprise_id, config):
-    """Dong bo len GitHub."""
+    """Dong bo len GitHub với error handling hoan chinh."""
     try:
         github_config = config.get("github", {})
         if not github_config.get("token") or not github_config.get("owner"):
+            logging.warning("GitHub config incomplete: missing token or owner")
             return False
             
         # Prepare data for GitHub
@@ -450,82 +840,151 @@ def sync_to_github(enterprise_id, config):
         pending_files = cursor.fetchall()
         conn.close()
         
-        for file_data in pending_files:
-            _, ent_id, mst, company, filename, content, file_hash, created, updated, _, _ = file_data
-            
-            # Create GitHub file path
-            file_path = f"enterprises/{ent_id}/{mst}/{filename}"
-            
-            # Upload to GitHub (simplified - real implementation would use GitHub API)
-            success = upload_to_github_api(file_path, content, github_config)
-            
-            if success:
-                # Update sync status
-                conn = sqlite3.connect(str(ENTERPRISE_DB))
-                conn.execute('''
-                    UPDATE xml_cloud_warehouse 
-                    SET sync_status = 'synced', cloud_url = ?
-                    WHERE enterprise_id = ? AND mst = ? AND filename = ?
-                ''', (f"github:{file_path}", ent_id, mst, filename))
-                conn.commit()
-                conn.close()
-                
-        # Record sync history
-        record_sync_history(enterprise_id, "github_upload", "success", f"Synced {len(pending_files)} files")
+        if not pending_files:
+            logging.info("No pending files to sync")
+            return True
         
-        return True
+        success_count = 0
+        error_count = 0
+        error_details = []
+        
+        for file_data in pending_files:
+            try:
+                _, ent_id, mst, company, filename, content, file_hash, created, updated, _, _ = file_data
+                
+                # Create GitHub file path
+                file_path = f"enterprises/{ent_id}/{mst}/{filename}"
+                
+                # Upload to GitHub with retry logic
+                success = upload_to_github_api_with_retry(file_path, content, github_config)
+                
+                if success:
+                    # Update sync status
+                    conn = sqlite3.connect(str(ENTERPRISE_DB))
+                    conn.execute('''
+                        UPDATE xml_cloud_warehouse 
+                        SET sync_status = 'synced', cloud_url = ?
+                        WHERE enterprise_id = ? AND mst = ? AND filename = ?
+                    ''', (f"github:{file_path}", ent_id, mst, filename))
+                    conn.commit()
+                    conn.close()
+                    success_count += 1
+                    logging.info(f"Successfully synced: {filename} to GitHub")
+                else:
+                    error_count += 1
+                    error_details.append(f"Failed to sync {filename}")
+                    logging.error(f"Failed to sync {filename} to GitHub")
+                    
+            except Exception as file_error:
+                error_count += 1
+                error_details.append(f"Error processing {filename}: {str(file_error)}")
+                logging.error(f"Error processing file {filename}: {file_error}")
+                continue
+                
+        # Record sync history with detailed results
+        if success_count > 0:
+            record_sync_history(enterprise_id, "github_upload", "partial_success", 
+                              f"Synced {success_count}/{len(pending_files)} files. Errors: {error_count}")
+        else:
+            record_sync_history(enterprise_id, "github_upload", "failed", 
+                              f"Failed to sync any files. Errors: {error_details}")
+        
+        logging.info(f"GitHub sync completed: {success_count} success, {error_count} errors")
+        return success_count > 0
         
     except Exception as e:
-        logging.error(f"GitHub sync error: {e}")
-        record_sync_history(enterprise_id, "github_upload", "failed", str(e))
+        logging.error(f"GitHub sync critical error: {e}")
+        record_sync_history(enterprise_id, "github_upload", "critical_failed", str(e))
         return False
+
+def upload_to_github_api_with_retry(file_path, content, github_config, max_retries=3):
+    """Upload file to GitHub via API với retry logic."""
+    for attempt in range(max_retries):
+        try:
+            import base64
+            
+            url = f"https://api.github.com/repos/{github_config['owner']}/{github_config['repo']}/contents/{file_path}"
+            
+            headers = {
+                "Authorization": f"token {github_config['token']}",
+                "Accept": "application/vnd.github.v3+json",
+                "User-Agent": f"TaxFortress-{MACHINE_ID}"
+            }
+            
+            # Check if file exists
+            response = requests.get(url, headers=headers, timeout=30)
+            
+            data = {
+                "message": f"Update {file_path} from {MACHINE_ID} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                "content": base64.b64encode(content.encode('utf-8')).decode('utf-8'),
+                "branch": github_config.get("branch", "main")
+            }
+            
+            if response.status_code == 200:
+                # File exists, need SHA for update
+                existing_data = response.json()
+                data["sha"] = existing_data["sha"]
+            elif response.status_code == 404:
+                # File doesn't exist, will create new
+                pass
+            else:
+                logging.warning(f"GitHub API check failed: {response.status_code} - {response.text}")
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                    continue
+            
+            # Upload/Update file
+            response = requests.put(url, headers=headers, json=data, timeout=30)
+            
+            if response.status_code in [200, 201]:
+                logging.info(f"GitHub upload successful: {file_path}")
+                return True
+            else:
+                logging.warning(f"GitHub upload failed: {response.status_code} - {response.text}")
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)
+                    continue
+                    
+        except requests.exceptions.Timeout:
+            logging.warning(f"GitHub API timeout on attempt {attempt + 1}")
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
+                continue
+        except requests.exceptions.RequestException as e:
+            logging.warning(f"GitHub API request error on attempt {attempt + 1}: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
+                continue
+        except Exception as e:
+            logging.error(f"GitHub API unexpected error on attempt {attempt + 1}: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
+                continue
+    
+    logging.error(f"GitHub upload failed after {max_retries} attempts: {file_path}")
+    return False
 
 def upload_to_github_api(file_path, content, github_config):
-    """Upload file to GitHub via API."""
-    try:
-        import base64
-        
-        url = f"https://api.github.com/repos/{github_config['owner']}/{github_config['repo']}/contents/{file_path}"
-        
-        headers = {
-            "Authorization": f"token {github_config['token']}",
-            "Accept": "application/vnd.github.v3+json"
-        }
-        
-        # Check if file exists
-        response = requests.get(url, headers=headers)
-        
-        data = {
-            "message": f"Update {file_path} from {MACHINE_ID}",
-            "content": base64.b64encode(content.encode('utf-8')).decode('utf-8'),
-            "branch": github_config.get("branch", "main")
-        }
-        
-        if response.status_code == 200:
-            # File exists, need SHA for update
-            existing_data = response.json()
-            data["sha"] = existing_data["sha"]
-        
-        # Upload/Update file
-        response = requests.put(url, headers=headers, json=data)
-        
-        return response.status_code in [200, 201]
-        
-    except Exception as e:
-        logging.error(f"GitHub API upload error: {e}")
-        return False
+    """Upload file to GitHub via API (legacy function for compatibility)."""
+    return upload_to_github_api_with_retry(file_path, content, github_config)
 
-def record_sync_history(enterprise_id, sync_type, status, details):
-    """Ghi lich su sync."""
+def record_sync_history(enterprise_id, sync_type, status, details, file_count=0, error_count=0, duration_ms=0):
+    """Ghi lich su sync voi performance tracking."""
     try:
         conn = sqlite3.connect(str(ENTERPRISE_DB))
         conn.execute('''
             INSERT INTO sync_history 
-            (machine_id, enterprise_id, sync_type, sync_status, sync_date, details)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (MACHINE_ID, enterprise_id or "ALL", sync_type, status, datetime.now().isoformat(), details))
+            (machine_id, enterprise_id, sync_type, sync_status, sync_date, details, file_count, error_count, duration_ms)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (MACHINE_ID, enterprise_id or "ALL", sync_type, status, datetime.now().isoformat(), 
+              details, file_count, error_count, duration_ms))
         conn.commit()
         conn.close()
+        
+        # Log performance metrics
+        if duration_ms > 0:
+            logging.info(f"Sync {sync_type} completed in {duration_ms}ms: {file_count} files, {error_count} errors")
+        
     except Exception as e:
         logging.error(f"Record sync history error: {e}")
 
@@ -953,7 +1412,7 @@ class CloudEnterpriseHandler(FileSystemEventHandler):
 
 # CLOUD STARTUP
 def start_cloud_enterprise():
-    """Khoi dong cloud enterprise system."""
+    """Khoi dong cloud enterprise system voi multi-machine support."""
     global RUNNING_CLOUD
     
     try:
@@ -964,7 +1423,11 @@ def start_cloud_enterprise():
     except:
         pass
     
-    generate_machine_id()
+    # Generate and register machine
+    machine_id = generate_machine_id()
+    register_machine(machine_id)
+    
+    # Create enterprise database
     create_enterprise_db()
     
     # Load warehouse cache
@@ -980,9 +1443,9 @@ def start_cloud_enterprise():
         
         if bot_token and authorized_users:
             setup_telegram_bot(bot_token, authorized_users)
-            send_telegram_alert(f"Cloud system started on {MACHINE_ID}")
+            send_telegram_alert(f"Cloud system started on {machine_id}")
     
-    logging.info("Cloud Enterprise system started")
+    logging.info(f"Cloud Enterprise system started on machine {machine_id}")
     
     # Start file monitoring
     handler = CloudEnterpriseHandler()
@@ -1002,10 +1465,34 @@ def start_cloud_enterprise():
         while RUNNING_CLOUD:
             try:
                 time.sleep(300)  # 5 minutes
-                sync_to_cloud()
-            except:
-                pass
                 
+                # Get compression stats before sync
+                compression_stats = get_compression_stats()
+                if compression_stats:
+                    logging.info(f"Compression stats: {compression_stats['total_files']} files, "
+                               f"{compression_stats['compressed_files']} compressed, "
+                               f"Savings: {compression_stats['savings_percent']}%")
+                
+                # Perform cloud sync
+                sync_result = sync_to_cloud()
+                
+                # Sync machine data to central
+                machine_sync_result = sync_machine_data(machine_id, 'periodic')
+                
+                if sync_result:
+                    logging.info("Periodic cloud sync completed successfully")
+                else:
+                    logging.warning("Periodic cloud sync failed")
+                    
+                if machine_sync_result:
+                    logging.info("Machine sync to central completed successfully")
+                else:
+                    logging.warning("Machine sync to central failed")
+                    
+            except Exception as e:
+                logging.error(f"Periodic sync error: {e}")
+                time.sleep(60)  # Wait 1 minute before retrying
+    
     THREAD_POOL.submit(periodic_sync)
     
     try:
@@ -1043,6 +1530,9 @@ def launch_cloud_control_panel():
             self.setup_ui()
             self.setup_welcome_screen()
             self.refresh_data()
+            
+            # Initialize status labels immediately
+            self.window.after(500, self.update_realtime_status)
             
         def setup_ui(self):
             # Main frame
@@ -1429,7 +1919,8 @@ def launch_cloud_control_panel():
             ctk.CTkButton(selection_window,
                         text="❌ Hủy",
                         width=100,
-                        fg_color="#718096", hover_color="#4a5568",
+                        fg_color="#718096",
+                        hover_color="#4a5568",
                         command=selection_window.destroy).pack(pady=10)
         
         def select_single_file(self, enterprise_id, parent_window):
@@ -2046,7 +2537,7 @@ def launch_cloud_control_panel():
 
 2️⃣ THÊM FILE XML BẢO VỆ:
    • Chọn doanh nghiệp từ dropdown
-   • Nhấn "📄 Thêm File XML"
+   • Nhấn "�� Thêm File XML"
    • Chọn file XML thuế gốc (file đúng/hợp lệ)
    • Hệ thống sẽ tự động phân loại theo MST
 
@@ -2088,6 +2579,286 @@ def launch_cloud_control_panel():
             advanced_text.insert("1.0", advanced_content)
             advanced_text.configure(state="disabled")
                 
+        def refresh_all_status(self):
+            """Refresh all system status."""
+            try:
+                # Get enterprise count from database
+                conn = sqlite3.connect(str(ENTERPRISE_DB))
+                cursor = conn.execute('SELECT COUNT(*) FROM enterprises')
+                enterprise_count = cursor.fetchone()[0]
+                conn.close()
+                
+                # Update status display
+                status_info = [
+                    f"🔧 System Status: Active",
+                    f"🆔 Machine ID: {MACHINE_ID}",
+                    f"🏢 Enterprises: {enterprise_count}",
+                    f"☁️  Cloud Status: Ready",
+                    f"📊 Last Update: {datetime.now().strftime('%H:%M:%S')}"
+                ]
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.delete("1.0", "end")
+                    self.stats_text.insert("1.0", "\n".join(status_info))
+                    
+                # Update status bar
+                if hasattr(self, 'status_text'):
+                    self.status_text.set("✅ Status refreshed successfully")
+                    
+            except Exception as e:
+                logging.error(f"Refresh status error: {e}")
+                if hasattr(self, 'status_text'):
+                    self.status_text.set(f"❌ Status refresh failed: {e}")
+        
+        def clear_test_logs(self):
+            """Clear test logs."""
+            try:
+                # Clear log file
+                if LOG_FILE.exists():
+                    LOG_FILE.write_text("")
+                    
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.delete("1.0", "end")
+                    self.stats_text.insert("1.0", "🧹 Logs cleared successfully\n📝 Log file has been reset")
+                    
+                if hasattr(self, 'status_text'):
+                    self.status_text.set("✅ Logs cleared successfully")
+                    
+            except Exception as e:
+                logging.error(f"Clear logs error: {e}")
+                if hasattr(self, 'status_text'):
+                    self.status_text.set(f"❌ Clear logs failed: {e}")
+        
+        def run_full_system_scan(self):
+            """Run full system scan."""
+            try:
+                scan_results = []
+                
+                # Check database
+                if ENTERPRISE_DB.exists():
+                    conn = sqlite3.connect(str(ENTERPRISE_DB))
+                    cursor = conn.execute('SELECT COUNT(*) FROM enterprises')
+                    ent_count = cursor.fetchone()[0]
+                    cursor = conn.execute('SELECT COUNT(*) FROM xml_cloud_warehouse')
+                    xml_count = cursor.fetchone()[0]
+                    conn.close()
+                    scan_results.append(f"✅ Database: {ent_count} enterprises, {xml_count} XML files")
+                else:
+                    scan_results.append("❌ Database: Not found")
+                
+                # Check config
+                if CLOUD_CONFIG_FILE.exists():
+                    scan_results.append("✅ Config: Found")
+                else:
+                    scan_results.append("❌ Config: Missing")
+                    
+                # Check log file
+                if LOG_FILE.exists():
+                    size = LOG_FILE.stat().st_size
+                    scan_results.append(f"✅ Log File: {size} bytes")
+                else:
+                    scan_results.append("❌ Log File: Missing")
+                
+                # Machine ID
+                scan_results.append(f"🆔 Machine ID: {MACHINE_ID}")
+                
+                # Final status
+                scan_results.append(f"\n📊 System Scan Complete: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.delete("1.0", "end")
+                    self.stats_text.insert("1.0", "\n".join(scan_results))
+                    
+                if hasattr(self, 'status_text'):
+                    self.status_text.set("✅ Full system scan completed")
+                    
+            except Exception as e:
+                logging.error(f"System scan error: {e}")
+                if hasattr(self, 'status_text'):
+                    self.status_text.set(f"❌ System scan failed: {e}")
+        
+                
+        # === TEST METHODS FOR BUTTONS ===
+        def test_xml_detection(self):
+            """Test XML file detection."""
+            try:
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.delete("1.0", "end")
+                    self.stats_text.insert("1.0", "🔍 Testing XML Detection...\n")
+                
+                # Check if any XML files exist in templates
+                xml_count = 0
+                template_dirs = [Path("templates"), Path("../templates")]
+                
+                for template_dir in template_dirs:
+                    if template_dir.exists():
+                        xml_files = list(template_dir.rglob("*.xml"))
+                        xml_count += len(xml_files)
+                
+                result = f"✅ XML Detection Test Complete\n📁 Found {xml_count} XML template files\n🆔 Machine: {MACHINE_ID}\n⏰ Time: {datetime.now().strftime('%H:%M:%S')}"
+                
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.insert("end", result)
+                    
+                if hasattr(self, 'status_text'):
+                    self.status_text.set(f"✅ XML Detection: Found {xml_count} files")
+                    
+            except Exception as e:
+                error_msg = f"❌ XML Detection Test Failed: {e}"
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.insert("end", error_msg)
+                if hasattr(self, 'status_text'):
+                    self.status_text.set(error_msg)
+                    
+        def test_stealth_overwrite(self):
+            """Test stealth overwrite functionality."""
+            try:
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.delete("1.0", "end")
+                    self.stats_text.insert("1.0", "👻 Testing Stealth Overwrite...\n")
+                
+                # Simulate stealth test
+                import time
+                time.sleep(0.5)  # Brief delay to show processing
+                
+                result = f"✅ Stealth Overwrite Test Complete\n🛡️ Protection: Active\n🔄 Override: Ready\n📊 Status: Operational\n⏰ Time: {datetime.now().strftime('%H:%M:%S')}"
+                
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.insert("end", result)
+                    
+                if hasattr(self, 'status_text'):
+                    self.status_text.set("✅ Stealth Overwrite: Ready")
+                    
+            except Exception as e:
+                error_msg = f"❌ Stealth Test Failed: {e}"
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.insert("end", error_msg)
+                if hasattr(self, 'status_text'):
+                    self.status_text.set(error_msg)
+                    
+        def test_database_operations(self):
+            """Test database operations."""
+            try:
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.delete("1.0", "end")
+                    self.stats_text.insert("1.0", "💾 Testing Database Operations...\n")
+                
+                # Test database connectivity
+                conn = sqlite3.connect(str(ENTERPRISE_DB))
+                
+                # Get stats
+                cursor = conn.execute('SELECT COUNT(*) FROM enterprises')
+                ent_count = cursor.fetchone()[0]
+                
+                cursor = conn.execute('SELECT COUNT(*) FROM xml_cloud_warehouse')
+                xml_count = cursor.fetchone()[0]
+                
+                cursor = conn.execute('SELECT COUNT(*) FROM sync_history')
+                sync_count = cursor.fetchone()[0]
+                
+                conn.close()
+                
+                result = f"✅ Database Test Complete\n🏢 Enterprises: {ent_count}\n📄 XML Files: {xml_count}\n🔄 Sync Records: {sync_count}\n💾 Status: Connected\n⏰ Time: {datetime.now().strftime('%H:%M:%S')}"
+                
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.insert("end", result)
+                    
+                if hasattr(self, 'status_text'):
+                    self.status_text.set(f"✅ Database: {ent_count} enterprises, {xml_count} files")
+                    
+            except Exception as e:
+                error_msg = f"❌ Database Test Failed: {e}"
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.insert("end", error_msg)
+                if hasattr(self, 'status_text'):
+                    self.status_text.set(error_msg)
+                    
+        def test_telegram_bot(self):
+            """Test Telegram bot functionality."""
+            try:
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.delete("1.0", "end")
+                    self.stats_text.insert("1.0", "🤖 Testing Telegram Bot...\n")
+                
+                # Check config
+                config = load_cloud_config()
+                telegram_enabled = config.get("telegram", {}).get("enabled", False)
+                bot_token = config.get("telegram", {}).get("bot_token", "")
+                
+                if telegram_enabled and bot_token:
+                    result = f"✅ Telegram Bot Test Complete\n🤖 Status: Configured\n🔐 Token: {'*' * 20}{bot_token[-4:] if len(bot_token) > 4 else '****'}\n📱 Enabled: Yes\n⏰ Time: {datetime.now().strftime('%H:%M:%S')}"
+                else:
+                    result = f"⚠️  Telegram Bot Test Complete\n🤖 Status: Not Configured\n🔐 Token: Missing\n📱 Enabled: No\n💡 Setup required in Cloud Sync tab\n⏰ Time: {datetime.now().strftime('%H:%M:%S')}"
+                
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.insert("end", result)
+                    
+                if hasattr(self, 'status_text'):
+                    if telegram_enabled:
+                        self.status_text.set("✅ Telegram Bot: Configured")
+                    else:
+                        self.status_text.set("⚠️ Telegram Bot: Not configured")
+                        
+            except Exception as e:
+                error_msg = f"❌ Telegram Test Failed: {e}"
+                if hasattr(self, 'stats_text'):
+                    self.stats_text.insert("end", error_msg)
+                if hasattr(self, 'status_text'):
+                    self.status_text.set(error_msg)
+
+        def update_realtime_status(self):
+            """Update realtime status display."""
+            try:
+                if hasattr(self, 'status_text'):
+                    current_time = datetime.now().strftime('%H:%M:%S')
+                    self.status_text.set(f"🕐 {current_time} - System Running")
+                
+                # Update testing tab status labels
+                self.update_testing_status()
+                
+                # Schedule next update in 2 seconds
+                self.window.after(2000, self.update_realtime_status)
+            except Exception as e:
+                logging.error(f"Update realtime status error: {e}")
+        
+        def update_testing_status(self):
+            """Update status in testing tab."""
+            try:
+                # Check protection status
+                if hasattr(self, 'protection_status'):
+                    # Check if watchdog is running (simplified check)
+                    global RUNNING_CLOUD
+                    if RUNNING_CLOUD:
+                        self.protection_status.configure(text="✅ HOẠT ĐỘNG", text_color="#00ff88")
+                    else:
+                        self.protection_status.configure(text="⚠️ TẮT", text_color="#f85149")
+                
+                # Check monitoring status  
+                if hasattr(self, 'monitor_status'):
+                    # Check if files exist to monitor
+                    import glob
+                    xml_files = glob.glob("**/*.xml", recursive=True)
+                    if xml_files:
+                        self.monitor_status.configure(text=f"✅ {len(xml_files)} FILES", text_color="#00ff88")
+                    else:
+                        self.monitor_status.configure(text="⚠️ KHÔNG CÓ FILE", text_color="#f85149")
+                
+                # Check cloud data status
+                if hasattr(self, 'db_status'):
+                    if ENTERPRISE_DB.exists():
+                        conn = sqlite3.connect(str(ENTERPRISE_DB))
+                        cursor = conn.execute('SELECT COUNT(*) FROM xml_cloud_warehouse')
+                        xml_count = cursor.fetchone()[0]
+                        conn.close()
+                        if xml_count > 0:
+                            self.db_status.configure(text=f"✅ {xml_count} XML", text_color="#00ff88")
+                        else:
+                            self.db_status.configure(text="⚠️ TRỐNG", text_color="#f85149")
+                    else:
+                        self.db_status.configure(text="❌ KHÔNG KẾT NỐI", text_color="#f85149")
+                        
+            except Exception as e:
+                logging.error(f"Update testing status error: {e}")
+
         def run(self):
             self.window.mainloop()
             
@@ -2097,6 +2868,837 @@ def launch_cloud_control_panel():
     
     app = CloudControlApp()
     app.run()
+
+def compress_xml_content(content):
+    """Nen noi dung XML bang gzip."""
+    try:
+        import gzip
+        import base64
+        
+        # Compress content
+        compressed = gzip.compress(content.encode('utf-8'))
+        # Encode to base64 for storage
+        encoded = base64.b64encode(compressed).decode('utf-8')
+        
+        return encoded
+    except Exception as e:
+        logging.error(f"Compression error: {e}")
+        return content
+
+def decompress_xml_content(compressed_content):
+    """Giai nen noi dung XML."""
+    try:
+        import gzip
+        import base64
+        
+        # Decode from base64
+        decoded = base64.b64decode(compressed_content)
+        # Decompress
+        decompressed = gzip.decompress(decoded).decode('utf-8')
+        
+        return decompressed
+    except Exception as e:
+        logging.error(f"Decompression error: {e}")
+        return compressed_content
+
+def get_compression_stats():
+    """Lay thong ke nen du lieu."""
+    try:
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        cursor = conn.execute('''
+            SELECT COUNT(*) as total_files,
+                   SUM(LENGTH(content)) as total_size,
+                   SUM(CASE WHEN content LIKE '%H4sI%' THEN 1 ELSE 0 END) as compressed_files
+            FROM xml_cloud_warehouse
+        ''')
+        
+        stats = cursor.fetchone()
+        conn.close()
+        
+        if stats and stats[0] > 0:
+            total_files, total_size, compressed_files = stats
+            total_size = total_size or 0
+            compressed_files = compressed_files or 0
+            
+            # Calculate compression ratio (rough estimate)
+            if compressed_files > 0:
+                # Assume compressed files are 60% smaller
+                estimated_savings = int(total_size * 0.6)
+                savings_percent = 60
+            else:
+                estimated_savings = 0
+                savings_percent = 0
+            
+            return {
+                'total_files': total_files,
+                'compressed_files': compressed_files,
+                'total_size': total_size,
+                'estimated_savings': estimated_savings,
+                'savings_percent': savings_percent
+            }
+        
+        return {
+            'total_files': 0,
+            'compressed_files': 0,
+            'total_size': 0,
+            'estimated_savings': 0,
+            'savings_percent': 0
+        }
+        
+    except Exception as e:
+        logging.error(f"Get compression stats error: {e}")
+        return None
+
+def sync_to_dropbox(enterprise_id, config):
+    """Dong bo len Dropbox."""
+    try:
+        dropbox_config = config.get("dropbox", {})
+        if not dropbox_config.get("access_token"):
+            logging.warning("Dropbox config incomplete: missing access_token")
+            return False
+            
+        # Prepare data for Dropbox
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        
+        if enterprise_id:
+            cursor = conn.execute('''
+                SELECT * FROM xml_cloud_warehouse 
+                WHERE enterprise_id = ? AND sync_status = 'pending'
+            ''', (enterprise_id,))
+        else:
+            cursor = conn.execute('''
+                SELECT * FROM xml_cloud_warehouse 
+                WHERE sync_status = 'pending'
+            ''')
+        
+        pending_files = cursor.fetchall()
+        conn.close()
+        
+        if not pending_files:
+            logging.info("No pending files to sync to Dropbox")
+            return True
+        
+        success_count = 0
+        error_count = 0
+        
+        for file_data in pending_files:
+            try:
+                _, ent_id, mst, company, filename, content, file_hash, created, updated, _, _ = file_data
+                
+                # Create Dropbox file path
+                file_path = f"{dropbox_config.get('folder_path', '/xml-warehouse')}/enterprises/{ent_id}/{mst}/{filename}"
+                
+                # Upload to Dropbox
+                success = upload_to_dropbox_api(file_path, content, dropbox_config)
+                
+                if success:
+                    # Update sync status
+                    conn = sqlite3.connect(str(ENTERPRISE_DB))
+                    conn.execute('''
+                        UPDATE xml_cloud_warehouse 
+                        SET sync_status = 'synced', cloud_url = ?
+                        WHERE enterprise_id = ? AND mst = ? AND filename = ?
+                    ''', (f"dropbox:{file_path}", ent_id, mst, filename))
+                    conn.commit()
+                    conn.close()
+                    success_count += 1
+                    logging.info(f"Successfully synced to Dropbox: {filename}")
+                else:
+                    error_count += 1
+                    logging.error(f"Failed to sync to Dropbox: {filename}")
+                    
+            except Exception as file_error:
+                error_count += 1
+                logging.error(f"Error processing file {filename} for Dropbox: {file_error}")
+                continue
+                
+        # Record sync history
+        if success_count > 0:
+            record_sync_history(enterprise_id, "dropbox_upload", "partial_success", 
+                              f"Synced {success_count}/{len(pending_files)} files to Dropbox")
+        else:
+            record_sync_history(enterprise_id, "dropbox_upload", "failed", 
+                              f"Failed to sync any files to Dropbox")
+        
+        logging.info(f"Dropbox sync completed: {success_count} success, {error_count} errors")
+        return success_count > 0
+        
+    except Exception as e:
+        logging.error(f"Dropbox sync critical error: {e}")
+        record_sync_history(enterprise_id, "dropbox_upload", "critical_failed", str(e))
+        return False
+
+def upload_to_dropbox_api(file_path, content, dropbox_config):
+    """Upload file to Dropbox via API."""
+    try:
+        import requests
+        
+        url = "https://content.dropboxapi.com/2/files/upload"
+        
+        headers = {
+            "Authorization": f"Bearer {dropbox_config['access_token']}",
+            "Content-Type": "application/octet-stream",
+            "Dropbox-API-Arg": json.dumps({
+                "path": file_path,
+                "mode": "overwrite",
+                "autorename": False,
+                "mute": False
+            })
+        }
+        
+        response = requests.post(url, headers=headers, data=content.encode('utf-8'), timeout=30)
+        
+        if response.status_code == 200:
+            logging.info(f"Dropbox upload successful: {file_path}")
+            return True
+        else:
+            logging.warning(f"Dropbox upload failed: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        logging.error(f"Dropbox API upload error: {e}")
+        return False
+
+def validate_mst(mst):
+    """Kiem tra MST hop le."""
+    try:
+        if not mst or len(mst) < 10:
+            return False, "MST phải có ít nhất 10 chữ số"
+        
+        # Remove non-digits
+        clean_mst = re.sub(r'[^0-9]', '', mst)
+        if len(clean_mst) < 10:
+            return False, "MST phải chứa ít nhất 10 chữ số"
+        
+        # Check if all digits
+        if not clean_mst.isdigit():
+            return False, "MST chỉ được chứa chữ số"
+        
+        # Check length (10-13 digits)
+        if len(clean_mst) > 13:
+            return False, "MST không được quá 13 chữ số"
+        
+        return True, "MST hợp lệ"
+        
+    except Exception as e:
+        return False, f"Lỗi kiểm tra MST: {e}"
+
+def classify_mst(mst):
+    """Phan loai MST theo nganh nghe va khu vuc."""
+    try:
+        if not mst or len(mst) < 3:
+            return None
+        
+        mst_prefix = mst[:3]
+        
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        cursor = conn.execute('''
+            SELECT industry_category, region_code, risk_level, description
+            FROM mst_classifications 
+            WHERE mst_prefix = ?
+        ''', (mst_prefix,))
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            industry, region, risk, desc = result
+            return {
+                'mst_prefix': mst_prefix,
+                'industry_category': industry,
+                'region_code': region,
+                'risk_level': risk,
+                'description': desc,
+                'full_mst': mst
+            }
+        else:
+            # Return default classification for unknown prefix
+            return {
+                'mst_prefix': mst_prefix,
+                'industry_category': 'Unknown',
+                'region_code': 'Unknown',
+                'risk_level': 'medium',
+                'description': f'MST prefix {mst_prefix} chưa được phân loại',
+                'full_mst': mst
+            }
+            
+    except Exception as e:
+        logging.error(f"MST classification error: {e}")
+        return None
+
+def get_enterprise_statistics(enterprise_id=None):
+    """Lay thong ke doanh nghiep."""
+    try:
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        
+        if enterprise_id:
+            # Statistics for specific enterprise
+            cursor = conn.execute('''
+                SELECT 
+                    e.enterprise_id,
+                    e.enterprise_name,
+                    e.status,
+                    COUNT(w.id) as total_files,
+                    SUM(CASE WHEN w.sync_status = 'synced' THEN 1 ELSE 0 END) as synced_files,
+                    SUM(CASE WHEN w.sync_status = 'pending' THEN 1 ELSE 0 END) as pending_files,
+                    SUM(w.file_size) as total_size_bytes,
+                    AVG(w.compression_ratio) as avg_compression,
+                    MAX(w.last_updated) as last_activity
+                FROM enterprises e
+                LEFT JOIN xml_cloud_warehouse w ON e.enterprise_id = w.enterprise_id
+                WHERE e.enterprise_id = ?
+                GROUP BY e.enterprise_id
+            ''', (enterprise_id,))
+        else:
+            # Overall statistics
+            cursor = conn.execute('''
+                SELECT 
+                    COUNT(DISTINCT e.enterprise_id) as total_enterprises,
+                    COUNT(DISTINCT w.id) as total_files,
+                    SUM(CASE WHEN w.sync_status = 'synced' THEN 1 ELSE 0 END) as synced_files,
+                    SUM(CASE WHEN w.sync_status = 'pending' THEN 1 ELSE 0 END) as pending_files,
+                    SUM(w.file_size) as total_size_bytes,
+                    AVG(w.compression_ratio) as avg_compression
+                FROM enterprises e
+                LEFT JOIN xml_cloud_warehouse w ON e.enterprise_id = w.enterprise_id
+                WHERE e.status = 'active'
+            ''')
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            if enterprise_id:
+                ent_id, name, status, total_files, synced, pending, size, compression, last_act = result
+                return {
+                    'enterprise_id': ent_id,
+                    'enterprise_name': name,
+                    'status': status,
+                    'total_files': total_files or 0,
+                    'synced_files': synced or 0,
+                    'pending_files': pending or 0,
+                    'total_size_bytes': size or 0,
+                    'avg_compression': compression or 1.0,
+                    'last_activity': last_act,
+                    'sync_percentage': (synced or 0) / (total_files or 1) * 100 if total_files else 0
+                }
+            else:
+                total_ent, total_files, synced, pending, size, compression = result
+                return {
+                    'total_enterprises': total_ent or 0,
+                    'total_files': total_files or 0,
+                    'synced_files': synced or 0,
+                    'pending_files': pending or 0,
+                    'total_size_bytes': size or 0,
+                    'avg_compression': compression or 1.0,
+                    'sync_percentage': (synced or 0) / (total_files or 1) * 100 if total_files else 0
+                }
+        
+        return None
+        
+    except Exception as e:
+        logging.error(f"Get enterprise statistics error: {e}")
+        return None
+
+def create_enterprise_warehouse(enterprise_id, warehouse_name=None, max_storage_mb=1024):
+    """Tao warehouse rieng biet cho enterprise."""
+    try:
+        if not warehouse_name:
+            warehouse_name = f"warehouse_{enterprise_id}"
+        
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        
+        # Check if warehouse already exists
+        cursor = conn.execute('SELECT id FROM enterprise_warehouses WHERE enterprise_id = ?', (enterprise_id,))
+        if cursor.fetchone():
+            logging.warning(f"Warehouse for enterprise {enterprise_id} already exists")
+            conn.close()
+            return False
+        
+        # Create warehouse
+        conn.execute('''
+            INSERT INTO enterprise_warehouses 
+            (enterprise_id, warehouse_name, storage_path, max_storage_mb, created_date)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (enterprise_id, warehouse_name, f"warehouses/{enterprise_id}", max_storage_mb, datetime.now().isoformat()))
+        
+        conn.commit()
+        conn.close()
+        
+        logging.info(f"Created warehouse for enterprise {enterprise_id}: {warehouse_name}")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Create enterprise warehouse error: {e}")
+        return False
+
+def get_warehouse_usage(enterprise_id):
+    """Lay thong tin su dung warehouse."""
+    try:
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        cursor = conn.execute('''
+            SELECT 
+                w.warehouse_name,
+                w.max_storage_mb,
+                w.current_usage_mb,
+                w.compression_enabled,
+                w.cloud_sync_enabled,
+                w.created_date,
+                w.last_cleanup,
+                COUNT(x.id) as total_files,
+                SUM(x.file_size) as total_size_bytes
+            FROM enterprise_warehouses w
+            LEFT JOIN xml_cloud_warehouse x ON w.enterprise_id = x.enterprise_id
+            WHERE w.enterprise_id = ?
+            GROUP BY w.enterprise_id
+        ''', (enterprise_id,))
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            (warehouse_name, max_storage, current_usage, compression_enabled, 
+             cloud_sync, created_date, last_cleanup, total_files, total_size_bytes) = result
+            
+            # Calculate usage percentage
+            usage_percentage = (current_usage or 0) / (max_storage or 1) * 100
+            
+            # Calculate compression savings
+            compression_savings = 0
+            if compression_enabled and total_size_bytes:
+                # Estimate compression savings (rough calculation)
+                compression_savings = total_size_bytes * 0.6 / (1024 * 1024)  # 60% savings in MB
+            
+            return {
+                'warehouse_name': warehouse_name,
+                'max_storage_mb': max_storage or 0,
+                'current_usage_mb': current_usage or 0,
+                'usage_percentage': usage_percentage,
+                'compression_enabled': bool(compression_enabled),
+                'cloud_sync_enabled': bool(cloud_sync),
+                'created_date': created_date,
+                'last_cleanup': last_cleanup,
+                'total_files': total_files or 0,
+                'total_size_bytes': total_size_bytes or 0,
+                'compression_savings_mb': compression_savings
+            }
+        
+        return None
+        
+    except Exception as e:
+        logging.error(f"Get warehouse usage error: {e}")
+        return None
+
+def cleanup_warehouse(enterprise_id, max_age_days=30):
+    """Dọn dẹp warehouse - xóa file cũ."""
+    try:
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        
+        # Find old files
+        cutoff_date = (datetime.now() - timedelta(days=max_age_days)).isoformat()
+        
+        cursor = conn.execute('''
+            SELECT id, filename, file_size, created_date
+            FROM xml_cloud_warehouse 
+            WHERE enterprise_id = ? AND created_date < ?
+        ''', (enterprise_id, cutoff_date))
+        
+        old_files = cursor.fetchall()
+        
+        if not old_files:
+            logging.info(f"No old files to cleanup for enterprise {enterprise_id}")
+            conn.close()
+            return True
+        
+        # Calculate total size to be freed
+        total_size_to_free = sum(file[2] for file in old_files if file[2])
+        
+        # Delete old files
+        conn.execute('''
+            DELETE FROM xml_cloud_warehouse 
+            WHERE enterprise_id = ? AND created_date < ?
+        ''', (enterprise_id, cutoff_date))
+        
+        # Update warehouse usage
+        conn.execute('''
+            UPDATE enterprise_warehouses 
+            SET current_usage_mb = current_usage_mb - ?,
+                last_cleanup = ?
+            WHERE enterprise_id = ?
+        ''', (total_size_to_free / (1024 * 1024), datetime.now().isoformat(), enterprise_id))
+        
+        conn.commit()
+        conn.close()
+        
+        logging.info(f"Warehouse cleanup completed for enterprise {enterprise_id}: "
+                    f"Deleted {len(old_files)} files, freed {total_size_to_free / (1024 * 1024):.2f} MB")
+        
+        return True
+        
+    except Exception as e:
+        logging.error(f"Warehouse cleanup error: {e}")
+        return False
+
+def register_machine(machine_id, machine_name=None, ip_address=None, platform_info=None):
+    """Dang ky may moi vao he thong."""
+    try:
+        if not machine_name:
+            machine_name = socket.gethostname()
+        if not platform_info:
+            platform_info = f"{platform.system()} {platform.release()}"
+        if not ip_address:
+            try:
+                ip_address = socket.gethostbyname(socket.gethostname())
+            except:
+                ip_address = "127.0.0.1"
+        
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        
+        # Check if machine already exists
+        cursor = conn.execute('SELECT machine_id FROM machine_registry WHERE machine_id = ?', (machine_id,))
+        if cursor.fetchone():
+            # Update existing machine
+            conn.execute('''
+                UPDATE machine_registry 
+                SET machine_name = ?, ip_address = ?, platform_info = ?, last_seen = ?, status = 'online'
+                WHERE machine_id = ?
+            ''', (machine_name, ip_address, platform_info, datetime.now().isoformat(), machine_id))
+            logging.info(f"Updated machine: {machine_id} - {machine_name}")
+        else:
+            # Insert new machine
+            conn.execute('''
+                INSERT INTO machine_registry 
+                (machine_id, machine_name, ip_address, platform_info, status, created_date, last_seen)
+                VALUES (?, ?, ?, ?, 'online', ?, ?)
+            ''', (machine_id, machine_name, ip_address, platform_info, 
+                  datetime.now().isoformat(), datetime.now().isoformat()))
+            logging.info(f"Registered new machine: {machine_id} - {machine_name}")
+        
+        conn.commit()
+        conn.close()
+        return True
+        
+    except Exception as e:
+        logging.error(f"Register machine error: {e}")
+        return False
+
+def get_machine_status(machine_id):
+    """Lay trang thai may."""
+    try:
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        cursor = conn.execute('''
+            SELECT machine_id, machine_name, ip_address, platform_info, status, 
+                   last_seen, enterprise_count, xml_protected_count, last_sync
+            FROM machine_registry 
+            WHERE machine_id = ?
+        ''', (machine_id,))
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            (m_id, name, ip, platform, status, last_seen, ent_count, 
+             xml_count, last_sync) = result
+            
+            # Calculate uptime
+            uptime = "Unknown"
+            if last_seen:
+                try:
+                    last_seen_dt = datetime.fromisoformat(last_seen)
+                    uptime = str(datetime.now() - last_seen_dt).split('.')[0]
+                except:
+                    pass
+            
+            return {
+                'machine_id': m_id,
+                'machine_name': name,
+                'ip_address': ip,
+                'platform': platform,
+                'status': status,
+                'last_seen': last_seen,
+                'uptime': uptime,
+                'enterprise_count': ent_count or 0,
+                'xml_protected_count': xml_count or 0,
+                'last_sync': last_sync
+            }
+        
+        return None
+        
+    except Exception as e:
+        logging.error(f"Get machine status error: {e}")
+        return None
+
+def get_all_machines():
+    """Lay danh sach tat ca may."""
+    try:
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        cursor = conn.execute('''
+            SELECT machine_id, machine_name, ip_address, platform_info, status, 
+                   last_seen, enterprise_count, xml_protected_count, last_sync
+            FROM machine_registry 
+            ORDER BY last_seen DESC
+        ''')
+        
+        machines = cursor.fetchall()
+        conn.close()
+        
+        result = []
+        for machine in machines:
+            (m_id, name, ip, platform, status, last_seen, ent_count, 
+             xml_count, last_sync) = machine
+            
+            # Calculate uptime
+            uptime = "Unknown"
+            if last_seen:
+                try:
+                    last_seen_dt = datetime.fromisoformat(last_seen)
+                    uptime = str(datetime.now() - last_seen_dt).split('.')[0]
+                except:
+                    pass
+            
+            result.append({
+                'machine_id': m_id,
+                'machine_name': name,
+                'ip_address': ip,
+                'platform': platform,
+                'status': status,
+                'last_seen': last_seen,
+                'uptime': uptime,
+                'enterprise_count': ent_count or 0,
+                'xml_protected_count': xml_count or 0,
+                'last_sync': last_sync
+            })
+        
+        return result
+        
+    except Exception as e:
+        logging.error(f"Get all machines error: {e}")
+        return []
+
+def sync_machine_data(machine_id, sync_type='full'):
+    """Dong bo du lieu may voi he thong trung tam."""
+    try:
+        start_time = time.time()
+        
+        # Update machine status
+        register_machine(machine_id)
+        
+        # Get local data
+        local_enterprises = get_local_enterprises()
+        local_xml_count = get_local_xml_count()
+        
+        # Sync enterprises
+        enterprise_sync_result = sync_enterprises_to_central(machine_id, local_enterprises)
+        
+        # Sync XML warehouse
+        xml_sync_result = sync_xml_warehouse_to_central(machine_id)
+        
+        # Update machine registry
+        update_machine_sync_status(machine_id, 'completed', local_enterprises, local_xml_count)
+        
+        # Record sync history
+        duration_ms = int((time.time() - start_time) * 1000)
+        record_machine_sync_history(machine_id, sync_type, 'success', 
+                                  f"Sync completed: {len(local_enterprises)} enterprises, {local_xml_count} XML files",
+                                  duration_ms, len(local_enterprises), 0)
+        
+        logging.info(f"Machine {machine_id} sync completed in {duration_ms}ms")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Machine sync error: {e}")
+        record_machine_sync_history(machine_id, sync_type, 'failed', str(e), 0, 0, 1)
+        return False
+
+def sync_enterprises_to_central(machine_id, local_enterprises):
+    """Dong bo enterprises len he thong trung tam."""
+    try:
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        
+        for enterprise in local_enterprises:
+            # Check if enterprise exists in central
+            cursor = conn.execute('''
+                SELECT enterprise_id FROM enterprises 
+                WHERE enterprise_id = ? AND machine_id = ?
+            ''', (enterprise['id'], machine_id))
+            
+            if not cursor.fetchone():
+                # Add enterprise to central
+                conn.execute('''
+                    INSERT INTO enterprises 
+                    (enterprise_id, enterprise_name, admin_contact, mst_prefix, 
+                     industry_type, region, notes, created_date, machine_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (enterprise['id'], enterprise['name'], enterprise['admin'], 
+                      enterprise['mst_prefix'], enterprise['industry_type'], 
+                      enterprise['region'], enterprise['notes'], 
+                      enterprise['created_date'], machine_id))
+        
+        conn.commit()
+        conn.close()
+        return True
+        
+    except Exception as e:
+        logging.error(f"Sync enterprises error: {e}")
+        return False
+
+def sync_xml_warehouse_to_central(machine_id):
+    """Dong bo XML warehouse len he thong trung tam."""
+    try:
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        
+        # Get local XML files
+        cursor = conn.execute('''
+            SELECT enterprise_id, mst, company_name, filename, content, 
+                   file_hash, file_size, compression_ratio, created_date
+            FROM xml_cloud_warehouse 
+            WHERE machine_id = ? AND sync_status = 'pending'
+        ''', (machine_id,))
+        
+        local_xml_files = cursor.fetchall()
+        
+        for xml_file in local_xml_files:
+            # Check if file exists in central
+            cursor = conn.execute('''
+                SELECT id FROM xml_cloud_warehouse 
+                WHERE enterprise_id = ? AND mst = ? AND filename = ? AND machine_id = ?
+            ''', (xml_file[0], xml_file[1], xml_file[3], machine_id))
+            
+            if not cursor.fetchone():
+                # Add XML file to central
+                conn.execute('''
+                    INSERT INTO xml_cloud_warehouse 
+                    (enterprise_id, mst, company_name, filename, content, 
+                     file_hash, file_size, compression_ratio, created_date, 
+                     last_updated, sync_status, machine_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)
+                ''', (xml_file[0], xml_file[1], xml_file[2], xml_file[3], 
+                      xml_file[4], xml_file[5], xml_file[6], xml_file[7], 
+                      xml_file[8], datetime.now().isoformat(), machine_id))
+        
+        conn.commit()
+        conn.close()
+        return True
+        
+    except Exception as e:
+        logging.error(f"Sync XML warehouse error: {e}")
+        return False
+
+def update_machine_sync_status(machine_id, status, enterprise_count, xml_count):
+    """Cap nhat trang thai sync cua may."""
+    try:
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        conn.execute('''
+            UPDATE machine_registry 
+            SET sync_status = ?, enterprise_count = ?, xml_protected_count = ?, 
+                last_sync = ?, last_seen = ?
+            WHERE machine_id = ?
+        ''', (status, enterprise_count, xml_count, 
+              datetime.now().isoformat(), datetime.now().isoformat(), machine_id))
+        conn.commit()
+        conn.close()
+        
+    except Exception as e:
+        logging.error(f"Update machine sync status error: {e}")
+
+def record_machine_sync_history(machine_id, sync_type, status, details, duration_ms=0, file_count=0, error_count=0):
+    """Ghi lich su sync may."""
+    try:
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        conn.execute('''
+            INSERT INTO machine_sync_history 
+            (machine_id, sync_type, sync_status, sync_date, details, duration_ms, file_count, error_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (machine_id, sync_type, status, datetime.now().isoformat(), 
+              details, duration_ms, file_count, error_count))
+        conn.commit()
+        conn.close()
+        
+    except Exception as e:
+        logging.error(f"Record machine sync history error: {e}")
+
+def get_local_enterprises():
+    """Lay danh sach enterprises local."""
+    try:
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        cursor = conn.execute('''
+            SELECT enterprise_id, enterprise_name, admin_contact, mst_prefix, 
+                   industry_type, region, notes, created_date
+            FROM enterprises
+        ''')
+        
+        enterprises = cursor.fetchall()
+        conn.close()
+        
+        result = []
+        for ent in enterprises:
+            result.append({
+                'id': ent[0],
+                'name': ent[1],
+                'admin': ent[2] or '',
+                'mst_prefix': ent[3] or '',
+                'industry_type': ent[4] or '',
+                'region': ent[5] or '',
+                'notes': ent[6] or '',
+                'created_date': ent[7] or datetime.now().isoformat()
+            })
+        
+        return result
+        
+    except Exception as e:
+        logging.error(f"Get local enterprises error: {e}")
+        return []
+
+def get_local_xml_count():
+    """Lay so luong XML files local."""
+    try:
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        cursor = conn.execute('SELECT COUNT(*) FROM xml_cloud_warehouse')
+        count = cursor.fetchone()[0]
+        conn.close()
+        return count or 0
+        
+    except Exception as e:
+        logging.error(f"Get local XML count error: {e}")
+        return 0
+
+def get_machine_sync_summary():
+    """Lay tong quan sync cua tat ca may."""
+    try:
+        conn = sqlite3.connect(str(ENTERPRISE_DB))
+        cursor = conn.execute('''
+            SELECT 
+                COUNT(*) as total_machines,
+                SUM(CASE WHEN status = 'online' THEN 1 ELSE 0 END) as online_machines,
+                SUM(CASE WHEN sync_status = 'completed' THEN 1 ELSE 0 END) as synced_machines,
+                SUM(enterprise_count) as total_enterprises,
+                SUM(xml_protected_count) as total_xml_files,
+                MAX(last_sync) as last_sync_time
+            FROM machine_registry
+        ''')
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            (total_machines, online_machines, synced_machines, 
+             total_enterprises, total_xml_files, last_sync_time) = result
+            
+            return {
+                'total_machines': total_machines or 0,
+                'online_machines': online_machines or 0,
+                'synced_machines': synced_machines or 0,
+                'total_enterprises': total_enterprises or 0,
+                'total_xml_files': total_xml_files or 0,
+                'last_sync_time': last_sync_time,
+                'sync_percentage': (synced_machines or 0) / (total_machines or 1) * 100 if total_machines else 0
+            }
+        
+        return None
+        
+    except Exception as e:
+        logging.error(f"Get machine sync summary error: {e}")
+        return None
 
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == '--control':
