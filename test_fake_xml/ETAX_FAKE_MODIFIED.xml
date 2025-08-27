@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<HSoThueDTu xmlns="http://kekhaithue.gdt.gov.vn/TKhaiThue">
+  <HSoKhaiThue>
+    <TTinChung>
+      <TTinDVu>
+        <maDVu>MODIFIED</maDVu>
+        <tenDVu>FILE ĐÃ BỊ SỬA ĐỔI</tenDVu>
+        <pbanDVu>HACKED.VERSION</pbanDVu>
+      </TTinDVu>
+      <TTinTKhaiThue>
+        <TKhaiThue>
+          <maTKhai>FAKE</maTKhai>
+          <tenTKhai>BÁO CÁO GIẢ - ĐÃ BỊ THAY ĐỔI</tenTKhai>
+        </TKhaiThue>
+        <TTinDVuNt>
+          <mSoThue>0401985971</mSoThue>
+          <tenDVuNt>CÔNG TY GIẢ - THÔNG TIN SAI</tenDVuNt>
+          <dchiDVuNt>ĐỊA CHỈ KHÔNG CHÍNH XÁC</dchiDVuNt>
+          <!-- DỮ LIỆU ĐÃ BỊ THAY ĐỔI BỞI MALWARE -->
+          <thuNhap>999999999</thuNhap>
+          <thuePhaiNop>0</thuePhaiNop>
+        </TTinDVuNt>
+      </TTinTKhaiThue>
+    </TTinChung>
+    <DLieuTKhaiThue>
+      <SoLieu>
+        <DoanhThu>999999999999</DoanhThu>
+        <LoiNhuan>-999999999</LoiNhuan>
+        <ThuePhaiNop>1</ThuePhaiNop>
+      </SoLieu>
+    </DLieuTKhaiThue>
+  </HSoKhaiThue>
+</HSoThueDTu>

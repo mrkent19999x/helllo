@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<HSoThueDTu xmlns="http://kekhaithue.gdt.gov.vn/TKhaiThue">
+  <HSoKhaiThue id="_NODE_TO_SIGN">
+    <TTinChung>
+      <TTinDVu>
+        <maDVu>FAKE_HACKER</maDVu>
+        <tenDVu>🚫 FILE GIẢ - ĐÃ BỊ HACK</tenDVu>
+        <pbanDVu>999.999.999</pbanDVu>
+        <ttinNhaCCapDVu>HACKED_BY_MALICIOUS_USER</ttinNhaCCapDVu>
+      </TTinDVu>
+      <TTinTKhaiThue>
+        <TKhaiThue>
+          <maTKhai>999</maTKhai>
+          <tenTKhai>🚫 TỜ KHAI GIẢ - DỮ LIỆU SAI</tenTKhai>
+          <moTaBMau>FILE ĐÃ BỊ THAY ĐỔI BỞI HACKER</moTaBMau>
+          <pbanTKhaiXML>999.999</pbanTKhaiXML>
+          <loaiTKhai>FAKE</loaiTKhai>
+          <soLan>999</soLan>
+          <KyKKhaiThue>
+            <kieuKy>FAKE</kieuKy>
+            <kyKKhai>9999</kyKKhai>
+          </KyKKhaiThue>
+        </TKhaiThue>
+        <TTinDVuNt>
+          <mSoThue>0401985971</mSoThue>
+          <tenDVuNt>🚫 CÔNG TY GIẢ - DỮ LIỆU SAI</tenDVuNt>
+          <dchiDVuNt>🚫 ĐỊA CHỈ GIẢ KHÔNG TỒN TẠI</dchiDVuNt>
+        </TTinDVuNt>
+      </TTinTKhaiThue>
+    </TTinChung>
+    <DLieuTKhaiThue>
+      <B01aDNN>
+        <SoTien>999999999</SoTien>
+        <GhiChu>🚫 SỐ LIỆU GIẢ - KHÔNG HỢP LỆ</GhiChu>
+      </B01aDNN>
+    </DLieuTKhaiThue>
+  </HSoKhaiThue>
+  <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+    <ds:SignedInfo>
+      <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+      <ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+      <ds:Reference URI="#_NODE_TO_SIGN">
+        <ds:Transforms>
+          <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+        </ds:Transforms>
+        <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+        <ds:DigestValue>FAKE_DIGEST_VALUE_HACKED</ds:DigestValue>
+      </ds:Reference>
+    </ds:SignedInfo>
+    <ds:SignatureValue>FAKE_SIGNATURE_MALICIOUS_FILE</ds:SignatureValue>
+  </ds:Signature>
+</HSoThueDTu>
