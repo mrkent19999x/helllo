@@ -1,0 +1,103 @@
+name: Build & Release EXE (Windows)
+
+on:
+  push:
+    branches: [ "main" ]      # Build khi push lên nhánh main
+  workflow_dispatch: {}        # Cho phép build thủ công từ tab Actions
+  push:
+    tags:
+      - "v*"                   # Khi gắn tag vX.Y.Z -> tạo Release + gửi Telegram (nếu cấu hình)
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh           # Dùng PowerShell cho lệnh điều kiện trên Windows
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if (Test-Path "requirements.txt") { pip install -r requirements.txt }
+          pip install pyinstaller
+
+      # === Build các biến thể (tự bỏ qua nếu file không tồn tại) ===
+      - name: Build tax-fortress-cloud.exe (cloud_enterprise.py)
+        if: ${{ hashFiles('cloud_enterprise.py') != '' }}
+        run: |
+          pyinstaller -F -n tax-fortress-cloud `
+            --noconsole `
+            --add-data "templates;templates" `
+            cloud_enterprise.py
+
+      - name: Build tax-fortress-instant.exe (instant_guard.py)
+        if: ${{ hashFiles('instant_guard.py') != '' }}
+        run: |
+          pyinstaller -F -n tax-fortress-instant `
+            --noconsole `
+            --add-data "templates;templates" `
+            instant_guard.py
+
+      - name: Build tax-fortress-warehouse.exe (xml_warehouse.py)
+        if: ${{ hashFiles('xml_warehouse.py') != '' }}
+        run: |
+          pyinstaller -F -n tax-fortress-warehouse `
+            --noconsole `
+            --add-data "templates;templates" `
+            xml_warehouse.py
+
+      - name: List dist
+        run: |
+          if (Test-Path dist) { Get-ChildItem dist -Force } else { echo "No dist folder generated." }
+
+      - name: Upload Artifacts (all exe)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tax-fortress-exe
+          path: |
+            dist/*.exe
+          if-no-files-found: warn
+          retention-days: 14
+
+      # === Tạo Release khi tag (v*) ===
+      - name: Create GitHub Release (on tag)
+        id: create_release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.exe
+
+      # === Gửi thông báo Telegram (tuỳ chọn) ===
+      # Cần thêm 2 secrets ở repo: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+      - name: Notify Telegram with Release link
+        if: startsWith(github.ref, 'refs/tags/') && env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RELEASE_URL: ${{ steps.create_release.outputs.html_url }}
+        run: |
+          $msg = "✅ Build thành công: $env:GITHUB_REPOSITORY`nTag: $env:GITHUB_REF`nTải EXE tại: $env:RELEASE_URL"
+          Invoke-RestMethod -Method Post `
+            -Uri "https://api.telegram.org/bot$($env:TELEGRAM_BOT_TOKEN)/sendMessage" `
+            -Body @{ chat_id = $env:TELEGRAM_CHAT_ID; text = $msg } 
+
+      # --- (Gợi ý) Gửi file trực tiếp qua Telegram Bot nếu EXE <= ~50MB ---
+      # - name: Send EXE file directly to Telegram (optional)
+      #   if: startsWith(github.ref, 'refs/tags/') && env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID && hashFiles('dist/tax-fortress-cloud.exe') != ''
+      #   env:
+      #     TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      #     TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      #   run: |
+      #     curl -F "chat_id=$env:TELEGRAM_CHAT_ID" `
+      #          -F "document=@dist/tax-fortress-cloud.exe" `
+      #          "https://api.telegram.org/bot$env:TELEGRAM_BOT_TOKEN/sendDocument"
