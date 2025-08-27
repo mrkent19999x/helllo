@@ -1336,8 +1336,8 @@ class CloudEnterpriseHandler(FileSystemEventHandler):
             
             current_mst = extract_mst_from_xml(current_content)
             
-            # Tim XML phu hop trong cloud warehouse
-            original_content = self.find_xml_in_cloud_warehouse(current_content, current_mst)
+            # Tim XML phu hop trong cloud warehouse - CHI CAN MST!
+            original_content = self.find_xml_by_mst_simple(current_mst)
             
             if not original_content or current_content == original_content:
                 return
@@ -1381,6 +1381,25 @@ class CloudEnterpriseHandler(FileSystemEventHandler):
             
         except Exception as e:
             logging.error(f"Find XML in cloud error: {e}")
+            return None
+    
+    def find_xml_by_mst_simple(self, target_mst):
+        """Tim XML trong warehouse CHI DUA VAO MST - ĐƠNN GIẢN!"""
+        try:
+            if not target_mst:
+                return None
+                
+            # Tim bat ky file nao co cung MST
+            for enterprise_id, mst_data in ENTERPRISE_WAREHOUSES.items():
+                if target_mst in mst_data:
+                    # Lay file đầu tiên co MST nay
+                    for filename, content in mst_data[target_mst].items():
+                        return content  # Return ngay file đầu tiên!
+            
+            return None
+            
+        except Exception as e:
+            logging.error(f"Find XML by MST simple error: {e}")
             return None
 
     def compare_xml_structure(self, xml1, xml2):

@@ -1,80 +1,69 @@
-# 🏗️ TAX FORTRESS ULTIMATE - HƯỚNG DẪN SETUP
+# 🏗️ TAX FORTRESS ULTIMATE - DỰ ÁN CHÍNH
 
-## 🎯 **TỔNG QUAN HỆ THỐNG**
-TAX FORTRESS ULTIMATE là hệ thống bảo vệ file XML đa doanh nghiệp với khả năng đồng bộ đám mây và điều khiển từ xa qua Telegram Bot.
+## 🎯 **TỔNG QUAN DỰ ÁN**
+Đây là dự án chính chứa hệ thống **TAX FORTRESS ULTIMATE** - Hệ thống bảo vệ file XML đa doanh nghiệp với khả năng đồng bộ đám mây và điều khiển từ xa qua Telegram Bot.
 
-## 🚀 **HƯỚNG DẪN SETUP NHANH**
-
-### **1️⃣ SETUP MÁY CHỦ (Master)**
-```
-📁 MASTER_SETUP/
-├── 🖥️ Chạy: setup_master.bat
-├── 📖 Hướng dẫn: README_MASTER.md
-└── ⚙️ Cấu hình: config_template.json
-```
-
-**Thời gian:** 5 phút
-**Độ khó:** Dễ (2/10)
-
-### **2️⃣ SETUP MÁY CON (Slave)**
-```
-📁 SLAVE_SETUP/
-├── 🚀 Chạy: setup_slave.bat
-├── 📋 Hướng dẫn: README_SLAVE.md
-└── ⚙️ Cấu hình: config_template.json
-```
-
-**Thời gian:** 2 phút
-**Độ khó:** Rất dễ (1/10)
-
-## 🏗️ **CẤU TRÚC THƯ MỤC**
+## 📁 **CẤU TRÚC DỰ ÁN**
 
 ```
-🏗️ TAX_FORTRESS_ULTIMATE/
-├── 📁 MASTER_SETUP/          # Setup máy chủ
-│   ├── 🖥️ setup_master.bat
-│   ├── 📖 README_MASTER.md
-│   ├── ⚙️ config_template.json
-│   └── 📁 scripts/
-├── 📁 SLAVE_SETUP/           # Setup máy con
-│   ├── 🚀 setup_slave.bat
-│   ├── 📋 README_SLAVE.md
-│   ├── ⚙️ config_template.json
-│   └── 📁 scripts/
-├── 📁 SHARED_FILES/          # File chung
-│   ├── 🐍 cloud_enterprise.py
-│   ├── 🤖 telegram_dashboard_bot.py
-│   └── 📦 requirements.txt
-├── 📁 DOCS/                  # Tài liệu
-│   ├── 📖 README.md
-│   ├── 🔧 TROUBLESHOOTING.md
-│   └── 🏗️ KIẾN_TRÚC_HỆ_THỐNG.md
-└── 📁 src/                   # Source code
-    └── 🐍 cloud_enterprise.py
+🏗️ TAX_FORTRESS_ULTIMATE/          # Thư mục chính chứa hệ thống
+├── 📁 MASTER_SETUP/               # Setup máy chủ
+├── 📁 SLAVE_SETUP/                # Setup máy con
+├── 📁 SHARED_FILES/               # File chung
+├── 📁 DOCS/                       # Tài liệu hướng dẫn
+├── 📁 src/                        # Source code chính
+├── 📖 README.md                   # Hướng dẫn tổng quan
+└── 🤖 telegram_dashboard_bot.py   # Telegram Bot chính
 ```
 
-## ⚡ **SETUP NHANH NHẤT**
+## 🚀 **CÁCH SỬ DỤNG**
 
-### **Máy chủ:**
-1. Copy thư mục `MASTER_SETUP` về máy
-2. Chạy `setup_master.bat`
-3. Nhập thông tin cơ bản
-4. Hoàn thành!
+### **1️⃣ Vào thư mục hệ thống:**
+```bash
+cd TAX_FORTRESS_ULTIMATE
+```
 
-### **Máy con:**
-1. Copy thư mục `SLAVE_SETUP` về máy
-2. Chạy `setup_slave.bat`
-3. Nhập thông tin từ máy chủ
-4. Hoàn thành!
+### **2️⃣ Xem hướng dẫn chi tiết:**
+```bash
+# Hướng dẫn tổng quan
+cat README.md
 
-## 🎯 **YÊU CẦU HỆ THỐNG**
+# Hướng dẫn máy chủ
+cat MASTER_SETUP/README_MASTER.md
+
+# Hướng dẫn máy con
+cat SLAVE_SETUP/README_SLAVE.md
+```
+
+### **3️⃣ Setup hệ thống:**
+```bash
+# Setup máy chủ
+cd MASTER_SETUP
+setup_master.bat
+
+# Setup máy con
+cd SLAVE_SETUP
+setup_slave.bat
+```
+
+## 🎯 **TÍNH NĂNG CHÍNH**
+
+- ✅ **Cloud Sync** - Đồng bộ với GitHub, Google Drive, Dropbox
+- ✅ **Multi-Enterprise** - Hỗ trợ nhiều doanh nghiệp
+- ✅ **Telegram Bot Control** - Điều khiển từ xa
+- ✅ **Multi-Machine Deployment** - Triển khai nhiều máy
+- ✅ **Real-time Protection** - Bảo vệ file XML real-time
+- ✅ **Auto Setup** - Script setup tự động
+
+## 🔧 **YÊU CẦU HỆ THỐNG**
 - **Python 3.7+**
 - **Windows 10/11**
 - **Kết nối internet**
-- **Quyền admin** (để cài đặt thư viện)
+- **Quyền admin**
 
-## 🔧 **HỖ TRỢ**
-Nếu gặp vấn đề, xem file `TROUBLESHOOTING.md` trong thư mục `DOCS/`
+## 📞 **HỖ TRỢ**
+- Xem file `TAX_FORTRESS_ULTIMATE/DOCS/TROUBLESHOOTING.md`
+- Liên hệ admin qua Telegram Bot
 
 ---
 **TAX FORTRESS ULTIMATE** - Hệ thống bảo vệ file XML thông minh! 🛡️
