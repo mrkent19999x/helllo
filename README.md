@@ -1,101 +1,80 @@
-# 🛡️ TAX FORTRESS ULTIMATE
+# 🏗️ TAX FORTRESS ULTIMATE - HƯỚNG DẪN SETUP
 
-**Hệ thống bảo vệ tài liệu thuế đa doanh nghiệp với cloud sync**
+## 🎯 **TỔNG QUAN HỆ THỐNG**
+TAX FORTRESS ULTIMATE là hệ thống bảo vệ file XML đa doanh nghiệp với khả năng đồng bộ đám mây và điều khiển từ xa qua Telegram Bot.
 
-## 📁 CẤU TRÚC DỰ ÁN
+## 🚀 **HƯỚNG DẪN SETUP NHANH**
 
+### **1️⃣ SETUP MÁY CHỦ (Master)**
 ```
-tax-fortress-ultimate/
-├── 📁 src/                    # Source code chính
-│   ├── cloud_enterprise.py    # GUI chính + cloud sync
-│   ├── icon.py                # Anti-kill mechanism
-│   ├── icon_stealth.py        # Stealth protection
-│   ├── stealth_final.py       # Stealth ultimate
-│   ├── xml_warehouse.py       # XML storage
-│   ├── tax_fortress_ultimate.py # Core system
-│   ├── invisible_guard.py     # Invisible protection
-│   ├── instant_guard.py       # Instant protection
-│   └── requirements.txt       # Dependencies
-├── 📁 docs/                   # Documentation
-│   ├── COMPRESSION_AND_CLOUD_GUIDE.md
-│   └── ... (các file hướng dẫn)
-├── 📁 build_output/           # Build files
-│   ├── dist/                  # Distribution files
-│   ├── build/                 # Build cache
-│   ├── __pycache__/           # Python cache
-│   └── *.spec                 # PyInstaller specs
-├── 📁 temp/                   # Temporary files
-├── 📄 .gitignore             # Git ignore rules
-└── 📄 README.md               # File này
+📁 MASTER_SETUP/
+├── 🖥️ Chạy: setup_master.bat
+├── 📖 Hướng dẫn: README_MASTER.md
+└── ⚙️ Cấu hình: config_template.json
 ```
 
-## 🚀 CÁCH SỬ DỤNG
+**Thời gian:** 5 phút
+**Độ khó:** Dễ (2/10)
 
-### **1. Chạy GUI chính:**
-```bash
-cd src
-python cloud_enterprise.py
+### **2️⃣ SETUP MÁY CON (Slave)**
+```
+📁 SLAVE_SETUP/
+├── 🚀 Chạy: setup_slave.bat
+├── 📋 Hướng dẫn: README_SLAVE.md
+└── ⚙️ Cấu hình: config_template.json
 ```
 
-### **2. Chạy từ dist:**
-```bash
-cd build_output/dist
-python TEST_GUI.py
+**Thời gian:** 2 phút
+**Độ khó:** Rất dễ (1/10)
+
+## 🏗️ **CẤU TRÚC THƯ MỤC**
+
+```
+🏗️ TAX_FORTRESS_ULTIMATE/
+├── 📁 MASTER_SETUP/          # Setup máy chủ
+│   ├── 🖥️ setup_master.bat
+│   ├── 📖 README_MASTER.md
+│   ├── ⚙️ config_template.json
+│   └── 📁 scripts/
+├── 📁 SLAVE_SETUP/           # Setup máy con
+│   ├── 🚀 setup_slave.bat
+│   ├── 📋 README_SLAVE.md
+│   ├── ⚙️ config_template.json
+│   └── 📁 scripts/
+├── 📁 SHARED_FILES/          # File chung
+│   ├── 🐍 cloud_enterprise.py
+│   ├── 🤖 telegram_dashboard_bot.py
+│   └── 📦 requirements.txt
+├── 📁 DOCS/                  # Tài liệu
+│   ├── 📖 README.md
+│   ├── 🔧 TROUBLESHOOTING.md
+│   └── 🏗️ KIẾN_TRÚC_HỆ_THỐNG.md
+└── 📁 src/                   # Source code
+    └── 🐍 cloud_enterprise.py
 ```
 
-### **3. Build executable:**
-```bash
-cd build_output
-pyi-build TaxFortress_Ultimate.spec
-```
+## ⚡ **SETUP NHANH NHẤT**
 
-## 🧹 DỌN DẸP
+### **Máy chủ:**
+1. Copy thư mục `MASTER_SETUP` về máy
+2. Chạy `setup_master.bat`
+3. Nhập thông tin cơ bản
+4. Hoàn thành!
 
-### **Xóa cache và file tạm:**
-```bash
-# Xóa Python cache
-find . -type d -name "__pycache__" -exec rm -rf {} +
+### **Máy con:**
+1. Copy thư mục `SLAVE_SETUP` về máy
+2. Chạy `setup_slave.bat`
+3. Nhập thông tin từ máy chủ
+4. Hoàn thành!
 
-# Xóa build cache
-rm -rf build_output/build/
-rm -rf build_output/__pycache__/
+## 🎯 **YÊU CẦU HỆ THỐNG**
+- **Python 3.7+**
+- **Windows 10/11**
+- **Kết nối internet**
+- **Quyền admin** (để cài đặt thư viện)
 
-# Xóa file tạm
-rm -rf temp/
-```
-
-### **Giữ gọn thư mục gốc:**
-- **Source code** → `src/`
-- **Documentation** → `docs/`
-- **Build files** → `build_output/`
-- **Temporary** → `temp/`
-
-## 📋 TÍNH NĂNG CHÍNH
-
-✅ **Real-time Protection** - Bảo vệ real-time  
-✅ **Stealth Overwrite** - Thay thế file giả  
-✅ **XML Compression** - Nén dữ liệu  
-✅ **Cloud Backup** - GitHub + Google Drive  
-✅ **Multi-Enterprise** - Hỗ trợ nhiều DN  
-✅ **Telegram Bot** - Điều khiển từ xa  
-✅ **Anti-Kill** - Bảo vệ process  
-✅ **Auto Startup** - Tự động khởi động  
-
-## 🔧 MAINTENANCE
-
-### **Cập nhật dependencies:**
-```bash
-cd src
-pip install -r requirements.txt --upgrade
-```
-
-### **Clean build:**
-```bash
-cd build_output
-rm -rf dist/ build/ __pycache__/
-pyi-build TaxFortress_Ultimate.spec
-```
+## 🔧 **HỖ TRỢ**
+Nếu gặp vấn đề, xem file `TROUBLESHOOTING.md` trong thư mục `DOCS/`
 
 ---
-
-**🎯 Mục tiêu: Giữ thư mục gốc gọn gàng, dễ quản lý!**
+**TAX FORTRESS ULTIMATE** - Hệ thống bảo vệ file XML thông minh! 🛡️

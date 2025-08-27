@@ -1,0 +1,35 @@
+# TAX FORTRESS ULTIMATE - Requirements
+# Các thư viện cần thiết cho hệ thống
+
+# HTTP requests
+requests>=2.28.0
+
+# Google APIs
+google-auth>=2.0.0
+google-auth-oauthlib>=0.5.0
+google-auth-httplib2>=0.1.0
+google-api-python-client>=2.0.0
+
+# Dropbox API
+dropbox>=11.36.0
+
+# Telegram Bot
+python-telegram-bot>=20.0
+
+# File monitoring
+watchdog>=2.1.0
+
+# Database
+sqlite3
+
+# Compression
+gzip
+base64
+
+# GUI (Tkinter)
+tkinter
+
+# System info
+platform
+uuid
+socket
