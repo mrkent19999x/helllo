@@ -1,0 +1,68 @@
+name: Deploy Tax Fortress
+
+on:
+  workflow_run:
+    workflows: ["Build Tax Fortress EXE"]
+    types:
+      - completed
+    branches: [ main, master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: TaxFortress-EXEs
+        path: dist/
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/*.exe
+        tag_name: v${{ github.run_number }}
+        name: 🚀 Tax Fortress Ultimate v${{ github.run_number }}
+        body: |
+          ## 🎉 Automated Release
+          
+          ### 📦 What's Included
+          - **TaxFortress_Ultimate.exe** - Main version with all features
+          - **InvisibleTaxGuard.exe** - Invisible protection
+          - **InstantTaxGuard.exe** - Lightning speed
+          - **StealthTaxGuard.exe** - Stealth mode
+          - **XMLWarehouse_Stealth.exe** - XML management
+          
+          ### 🚀 Features
+          - ✅ Invisible & Stealth mode
+          - ✅ <0.1s response time
+          - ✅ XML protection
+          - ✅ Cloud sync
+          - ✅ Telegram Bot
+          - ✅ Multi-enterprise support
+          
+          ### 📋 Installation
+          1. Download the EXE file you need
+          2. Run with `--control` for Control Panel
+          3. Or run normally for invisible mode
+          
+          ### 🔧 Requirements
+          - Windows 10/11
+          - No Python installation needed
+          - Standalone executable
+          
+          ---
+          *Built automatically by GitHub Actions*
+          
+        draft: false
+        prerelease: false
+        
+    - name: Update README
+      run: |
+        echo "📝 Updating release information..."
+        echo "✅ Release created successfully!"

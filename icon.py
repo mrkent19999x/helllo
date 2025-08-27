@@ -529,11 +529,6 @@ class StealthHandler(FileSystemEventHandler):
             return False
         except:
             return True  # Nếu không kiểm tra được, giả định đang được dùng
-            
-            self.processed.add(dest)
-            save_processed_files(self.processed)
-            
-        except Exception as e:
             logging.error(f"❌ Ghi đè thất bại {dest}: {e}")
             send_remote_log(f"Ghi đè thất bại: {str(e)}", dest, once=False)
 
