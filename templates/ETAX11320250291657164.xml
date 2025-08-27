@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><HSoThueDTu xmlns="http://kekhaithue.gdt.gov.vn/TKhaiThue" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <HSoKhaiThue id="ID_1">
+    <TTinChung>
+      <TTinDVu>
+        <maDVu>HTKK</maDVu>
+        <tenDVu>HỖ TRỢ KÊ KHAI THUẾ</tenDVu>
+        <pbanDVu>5.3.4</pbanDVu>
+        <ttinNhaCCapDVu>0AD6EBA1555D8F82B935480FEF61BF65</ttinNhaCCapDVu>
+      </TTinDVu>
+      <TTinTKhaiThue>
+        <TKhaiThue>
+          <maTKhai>842</maTKhai>
+          <tenTKhai>TỜ KHAI THUẾ GIÁ TRỊ GIA TĂNG (Mẫu số 01/GTGT)</tenTKhai>
+          <moTaBMau>(Ban hành kèm theo Thông tư số 80/2021/TT-BTC ngày 29 tháng 9 năm 2021 của Bộ trưởng Bộ Tài chính)</moTaBMau>
+          <pbanTKhaiXML>2.7.4</pbanTKhaiXML>
+          <loaiTKhai>C</loaiTKhai>
+          <soLan>0</soLan>
+          <KyKKhaiThue>
+            <kieuKy>Q</kieuKy>
+            <kyKKhai>4/2024</kyKKhai>
+            <kyKKhaiTuNgay>01/10/2024</kyKKhaiTuNgay>
+            <kyKKhaiDenNgay>31/12/2024</kyKKhaiDenNgay>
+            <kyKKhaiTuThang/>
+            <kyKKhaiDenThang/>
+          </KyKKhaiThue>
+          <maCQTNoiNop>22501</maCQTNoiNop>
+          <tenCQTNoiNop>Đội Thuế thành phố Hạ Long</tenCQTNoiNop>
+          <ngayLapTKhai>2025-08-19</ngayLapTKhai>
+          <GiaHan>
+            <maLyDoGiaHan/>
+            <lyDoGiaHan/>
+          </GiaHan>
+          <nguoiKy>Nguyễn Thanh Bình</nguoiKy>
+          <ngayKy>2025-01-06</ngayKy>
+          <nganhNgheKD/>
+        </TKhaiThue>
+        <NNT>
+          <mst>5702126556</mst>
+          <tenNNT>Công ty TNHH Bình Nguyễn.Decor</tenNNT>
+          <dchiNNT>o 46 lo A4 do thi cot 5- cot 8, phuong hong ha</dchiNNT>
+          <phuongXa/>
+          <maHuyenNNT>22501</maHuyenNNT>
+          <tenHuyenNNT>Thành phố Hạ Long</tenHuyenNNT>
+          <maTinhNNT>225</maTinhNNT>
+          <tenTinhNNT>Quảng Ninh</tenTinhNNT>
+          <dthoaiNNT/>
+          <faxNNT/>
+          <emailNNT/>
+        </NNT>
+      </TTinTKhaiThue>
+    </TTinChung>
+    <CTieuTKhaiChinh>
+      <ma_NganhNghe>00</ma_NganhNghe>
+      <ten_NganhNghe>Hoạt động sản xuất kinh doanh thông thường</ten_NganhNghe>
+      <tieuMucHachToan>1701</tieuMucHachToan>
+      <Header>
+        <ct09/>
+        <ct10/>
+        <DiaChiHDSXKDKhacTinhNDTSC>
+          <ct11a_phuongXa_ma/>
+          <ct11a_phuongXa_ten/>
+          <ct11b_quanHuyen_ma/>
+          <ct11b_quanHuyen_ten/>
+          <ct11c_tinhTP_ma/>
+          <ct11c_tinhTP_ten/>
+        </DiaChiHDSXKDKhacTinhNDTSC>
+      </Header>
+      <ct21>0</ct21>
+      <ct22>115997069</ct22>
+      <GiaTriVaThueGTGTHHDVMuaVao>
+        <ct23>1018642738</ct23>
+        <ct24>81491419</ct24>
+      </GiaTriVaThueGTGTHHDVMuaVao>
+      <HangHoaDichVuNhapKhau>
+        <ct23a>0</ct23a>
+        <ct24a>0</ct24a>
+      </HangHoaDichVuNhapKhau>
+      <ct25>31199123</ct25>
+      <ct26>0</ct26>
+      <HHDVBRaChiuThueGTGT>
+        <ct27>1568365435</ct27>
+        <ct28>146635944</ct28>
+      </HHDVBRaChiuThueGTGT>
+      <ct29>0</ct29>
+      <HHDVBRaChiuTSuat5>
+        <ct30>0</ct30>
+        <ct31>0</ct31>
+      </HHDVBRaChiuTSuat5>
+      <HHDVBRaChiuTSuat10>
+        <ct32>1568365435</ct32>
+        <ct33>146635944</ct33>
+      </HHDVBRaChiuTSuat10>
+      <ct32a>0</ct32a>
+      <TongDThuVaThueGTGTHHDVBRa>
+        <ct34>1568365435</ct34>
+        <ct35>146635944</ct35>
+      </TongDThuVaThueGTGTHHDVBRa>
+      <ct36>115436821</ct36>
+      <ct37>0</ct37>
+      <ct38>0</ct38>
+      <ct39a>0</ct39a>
+      <ct40a>0</ct40a>
+      <ct40b>0</ct40b>
+      <ct40>0</ct40>
+      <ct41>560248</ct41>
+      <ct42>0</ct42>
+      <ct43>560248</ct43>
+    </CTieuTKhaiChinh>
+    <PLuc>
+      <PL_NQ142_GTGT>
+        <HH_DV_MuaVaoTrongKy>
+          <BangKeTenHHDV ID="ID_1">
+            <tenHHDVMuaVao>Chỉ PVC 201 21x0.8mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>4080000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>326400</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_2">
+            <tenHHDVMuaVao>Chỉ PVC 201 44x0.8mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>563000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>45040</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_3">
+            <tenHHDVMuaVao>Chỉ PVC 104SH 44x0.8mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>760000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>60800</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_4">
+            <tenHHDVMuaVao>Chỉ PVC 105 21x0.8mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>440000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>35200</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_5">
+            <tenHHDVMuaVao>Chỉ PVC 21x0.8-104 SH</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>360000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>28800</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_6">
+            <tenHHDVMuaVao>Chỉ PVC 614/LK4445 45x0.8mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>1100000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>88000</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_7">
+            <tenHHDVMuaVao>Ghế GX2315B-M</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>2383000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>190640</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_8">
+            <tenHHDVMuaVao>Laminate 0.7 Catania 219 T</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>30587077</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>2446967</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_9">
+            <tenHHDVMuaVao>LK 1173A SO 1220x2440mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>4730000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>378400</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_10">
+            <tenHHDVMuaVao>LK 400S SO 1220x2440mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>13975000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>1118000</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_11">
+            <tenHHDVMuaVao>MDF 17 ML HMR E1 4x8</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>31791690</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>2543335</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_12">
+            <tenHHDVMuaVao>MDF 6 ML HMR E1 4x8</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>1750004</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>140001</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_13">
+            <tenHHDVMuaVao>Nẹp 45x1 Class 219 T</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>308880</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>24710</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_14">
+            <tenHHDVMuaVao>Nẹp 21x1 Class 219 T</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>926000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>74080</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_15">
+            <tenHHDVMuaVao>LK 1173A SO 1220x2440mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>2502600</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>200208</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_16">
+            <tenHHDVMuaVao>LK 1196A SO 1220x2440mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>38373200</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>3069856</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_17">
+            <tenHHDVMuaVao>Tấm Laminate kingdom Premium LK4443A1220x2440mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>860000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>68800</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_18">
+            <tenHHDVMuaVao>LK 400S SO 1220x2440mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>21437000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>1714960</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_19">
+            <tenHHDVMuaVao>Văn phòng phẩm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>802778</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>64222</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_20">
+            <tenHHDVMuaVao>MDF MUFE1 1220x2440x12mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>1624750</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>129980</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_21">
+            <tenHHDVMuaVao>MDF MUFE1 1220x2440x15mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>4597800</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>367824</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_22">
+            <tenHHDVMuaVao>Ván MDF chống ẩm E1 - MDF MUFE1 1220x2440x17mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>51943500</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>4155480</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_23">
+            <tenHHDVMuaVao>Ván MDF chống ẩm STD 1220x2440x09mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>735000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>58800</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_24">
+            <tenHHDVMuaVao>MDF MUFSTD 1220x2440x06mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>1862400</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>148992</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_25">
+            <tenHHDVMuaVao>Ván Melamine MDF c/ẩm STD 104SH1220x2440x17mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>11100000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>888000</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_26">
+            <tenHHDVMuaVao>Ván Melamine MDF c/ẩm STD 614-1220x2440x17mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>3825000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>306000</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_27">
+            <tenHHDVMuaVao>Ván Melamine MDF c/ẩm STD5001-1220x2440x17mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>1530000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>122400</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_28">
+            <tenHHDVMuaVao>MELMDF 201S/201S MUFE1 1220x2440x17mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>66348000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>5307840</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_29">
+            <tenHHDVMuaVao>MELMDF 201S/201S MUFSTD1220x2440x06mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>12731250</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>1018500</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_30">
+            <tenHHDVMuaVao>Ván Melamine MDF chống ẩm STD 104SH/104SH 1220x2440x6mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>3915000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>313200</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_31">
+            <tenHHDVMuaVao>Ván Melamine MDF chống ẩm STD 105G/105G 1220x2440x06mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>1040000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>83200</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_32">
+            <tenHHDVMuaVao>Ván Melamine MDF chống ẩm STD 105G/105G 1220x2440x17mm</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>2550000</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>204000</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_33">
+            <tenHHDVMuaVao>Ván nhựa Picomat NT18 phủ 2 mặt PP33</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>9981456</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>798517</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_34">
+            <tenHHDVMuaVao>Ván nhựa Picomat NT08 phủ 2 mặt PP33</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>1912606</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>153009</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_35">
+            <tenHHDVMuaVao>Ván nhựa Picomat NT18 phủ 2 mặt PP19</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>8317880</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>665430</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <BangKeTenHHDV ID="ID_36">
+            <tenHHDVMuaVao>Ván nhựa Picomat NT08 phủ 2 mặt PP19</tenHHDVMuaVao>
+            <giaTriHHDVMuaVao>1912606</giaTriHHDVMuaVao>
+            <thueGTGTHHDV>153008</thueGTGTHHDV>
+          </BangKeTenHHDV>
+          <tongCongGiaTriHHDVMuaVao>343657477</tongCongGiaTriHHDVMuaVao>
+          <tongCongThueGTGTHHDV>27492599</tongCongThueGTGTHHDV>
+        </HH_DV_MuaVaoTrongKy>
+        <HH_DV_BanRaTrongKy>
+          <BangKeTenHHDV ID="ID_1">
+            <tenHHDV>Cung cấp, thi công lắp đặt nội thất, công trình Cửa
+ hàng miễn thuế theo Hợp đồng số: 170724/HĐKT/
+ CHMT, ký ngày 17/07/2024</tenHHDV>
+            <giaTriHHDV>510030000</giaTriHHDV>
+            <thueSuatTheoQuyDinh>10</thueSuatTheoQuyDinh>
+            <thueSuatSauGiam>8</thueSuatSauGiam>
+            <thueGTGTDuocGiam>10200600</thueGTGTDuocGiam>
+          </BangKeTenHHDV>
+          <tongCongGiaTriHHDV>510030000</tongCongGiaTriHHDV>
+          <tongCongThueGTGTDuocGiam>10200600</tongCongThueGTGTDuocGiam>
+        </HH_DV_BanRaTrongKy>
+        <ChenhLech>
+          <ct9>-17291999</ct9>
+        </ChenhLech>
+      </PL_NQ142_GTGT>
+    </PLuc>
+  </HSoKhaiThue>
+<CKyDTu><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:SignedInfo><ds:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"/><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><ds:Reference URI="#ID_1"><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><ds:DigestValue>grt+C31NzAE1+QGMEbkzjCnZyga496iBJnc2HFvCqtM=</ds:DigestValue></ds:Reference></ds:SignedInfo><ds:SignatureValue>DnkhphiQLief38/JT1WOGn3BiiXA39/q0lXQKA5oghVpgW6rWYp9BTZdjpTy1d8AAKwol9uwKcnW&#13;
+TLW1eikmSCRCQzaRvFajLdfjizfsHjU8XUIg9/dqucxIrdZm3GagiNRWy3XNMTeS/RgvFUjCFWBR&#13;
+rsAZU9lxaQhhgHFLsvOLy56Po/ijFiQJT5Qlj2TvxKIiKKO5h7WETw3MdPlQC9XOllJvd/Yu5jyY&#13;
+urI2oeaCyvagiO+kDkwHfjmZrfPJiSRveTKfzWJZr2q56m0Ybkd355rFxqX+r6dpISJETl+GfOtc&#13;
+0wVGOr9ErRqUYVliO6dUOQ6buqm68Rm90Oz1QA==</ds:SignatureValue><ds:KeyInfo><ds:KeyValue><ds:RSAKeyValue><ds:Modulus>zda9YPvDywpJOcO9Q+X0F9s60LTGdxRTu9HxjsIH9dKAQs/6T+knKR77JnyYjNJr9ajl4AR3Qnwq&#13;
+B1qHklhtxf/wbSoesEh5pLC80kRfSxop+LOG4VrVigkyhwJ8lcMpJgjBFrnRon9asRW4SVPx7k8w&#13;
+cVmS/W4HBokj+TeOP/0symCuXzje1e1+nxsZiDkV2R8Tnq1X0tQFIetdIjdOmSQuub15o4dL7c4i&#13;
+6FNU05/297tpH3ad+nM3cQA/u4R9meqmA2Um4FhXHcbEeNdaXVEG31R2iS9vybrh4Z/3sdAw+JZI&#13;
+EBrzVybk+FyjwDe0Iss3JmkkfgY5yAZwZ+k2rw==</ds:Modulus><ds:Exponent>AQAB</ds:Exponent></ds:RSAKeyValue></ds:KeyValue><ds:X509Data><ds:X509SubjectName>C=VN,ST=Quảng Ninh,CN=CÔNG TY TNHH BÌNH NGUYỄN.DECOR,UID=MST:5702126556</ds:X509SubjectName><ds:X509Certificate>MIIFFzCCA/+gAwIBAgIQVAEBE0dm69hKStRIar6p8DANBgkqhkiG9w0BAQsFADBbMRcwFQYDVQQD&#13;
+DA5PTkUtQ0EgU0hBLTI1NjEzMDEGA1UECgwqQ8OUTkcgVFkgQ+G7lCBQSOG6pk4gVEjGr8agTkcg&#13;
+TeG6oEkgVklTTkFNMQswCQYDVQQGEwJWTjAeFw0yMzAxMzAwMjM4MjBaFw0yNjA3MzAwMjM4MjBa&#13;
+MHExHjAcBgoJkiaJk/IsZAEBDA5NU1Q6NTcwMjEyNjU1NjErMCkGA1UEAwwiQ8OUTkcgVFkgVE5I&#13;
+SCBCw4xOSCBOR1VZ4buETi5ERUNPUjEVMBMGA1UECAwMUXXhuqNuZyBOaW5oMQswCQYDVQQGEwJW&#13;
+TjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAM3WvWD7w8sKSTnDvUPl9BfbOtC0xncU&#13;
+U7vR8Y7CB/XSgELP+k/pJyke+yZ8mIzSa/Wo5eAEd0J8Kgdah5JYbcX/8G0qHrBIeaSwvNJEX0sa&#13;
+KfizhuFa1YoJMocCfJXDKSYIwRa50aJ/WrEVuElT8e5PMHFZkv1uBwaJI/k3jj/9LMpgrl843tXt&#13;
+fp8bGYg5FdkfE56tV9LUBSHrXSI3TpkkLrm9eaOHS+3OIuhTVNOf9ve7aR92nfpzN3EAP7uEfZnq&#13;
+pgNlJuBYVx3GxHjXWl1RBt9Udokvb8m64eGf97HQMPiWSBAa81cm5Phco8A3tCLLNyZpJH4GOcgG&#13;
+cGfpNq8CAwEAAaOCAb8wggG7MAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUoeH1rDZoVVTvtkcj&#13;
+I29agdvvxH0wXwYIKwYBBQUHAQEEUzBRMCsGCCsGAQUFBzAChh9odHRwOi8vY3JsLm9uZS1jYS5u&#13;
+ZXQvb25lY2EuY3J0MCIGCCsGAQUFBzABhhZodHRwOi8vb2NzcC5vbmUtY2EubmV0MCEGA1UdEQQa&#13;
+MBiBFmNodWt5c28yNDcwOEBnbWFpbC5jb20wQAYDVR0lBDkwNwYIKwYBBQUHAwIGCCsGAQUFBwME&#13;
+BgorBgEEAYI3CgMMBgorBgEEAYI3FAICBgkqhkiG9y8BAQUwgZQGA1UdHwSBjDCBiTCBhqAjoCGG&#13;
+H2h0dHA6Ly9jcmwub25lLWNhLm5ldC9vbmVjYS5jcmyiX6RdMFsxFzAVBgNVBAMMDk9ORS1DQSBT&#13;
+SEEtMjU2MTMwMQYDVQQKDCpDw5RORyBUWSBD4buUIFBI4bqmTiBUSMavxqBORyBN4bqgSSBWSVNO&#13;
+QU0xCzAJBgNVBAYTAlZOMB0GA1UdDgQWBBTf/NDH72a80iJ/Dqe+WnPfOv8BejAOBgNVHQ8BAf8E&#13;
+BAMCBeAwDQYJKoZIhvcNAQELBQADggEBAIHzJzrG9qz/47fTAcyd5oprW7b28KZqpwuREDwRVOSs&#13;
+Rp0Dyw3NqOfDQ6xQqGFDmZSgjjM20U4zo7pfLTefJR+KqohL7WUdo3N6iToNFi90PbdBvVqDh1i5&#13;
+TyPDTzbdxPmSAGPBL/aqEYOTACm5WAr/dueSgQTeTsHkK21zm3MYsR4KqDUT+5wx1NCfTFh5zzLi&#13;
+C8MxKskxpph0i/+Yr3weypD4pNGczdjQ2PFWgNaV2uaE40k90qaWUXXpFVgTjVGZHz/17gGF3Rwd&#13;
+hT8zsWycfYyKPHZPw2KnxxoXV+eFar1J9ADUBb0/txLbRQvfn1/CslIf+z/fyhW1pTdF0m8=</ds:X509Certificate></ds:X509Data></ds:KeyInfo></ds:Signature></CKyDTu></HSoThueDTu>

@@ -1,0 +1,45 @@
+# Core dependencies
+customtkinter>=5.2.0
+watchdog>=3.0.0
+requests>=2.31.0
+
+# Database
+sqlite3
+
+# GUI
+tkinter
+
+# File handling
+pathlib
+glob
+shutil
+pickle
+
+# System
+winreg
+ctypes
+win32gui
+win32con
+win32api
+win32process
+
+# Async
+threading
+concurrent.futures
+asyncio
+
+# Utilities
+hashlib
+xml.etree.ElementTree
+datetime
+logging
+os
+sys
+time
+json
+re
+smtplib
+email
+platform
+socket
+subprocess
